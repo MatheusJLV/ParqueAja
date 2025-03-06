@@ -3,7 +3,17 @@ guid: 34cc97b7f14221d42a0137efc498e6c5
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Metal Blanco
+    second: {fileID: 2100000, guid: d2278ceae22946c448db6b73feac3c41, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Oak hamilton
+    second: {fileID: 2100000, guid: c9be9665c54bc7347943cb6dcea35641, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

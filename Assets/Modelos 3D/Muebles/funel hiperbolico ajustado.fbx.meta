@@ -1,9 +1,14 @@
 fileFormatVersion: 2
-guid: 9a772a1677fa66e4bbb006db86c336ab
+guid: ce52ff76721a75042bad0fe3c972bcd1
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Plastico Polish
+    second: {fileID: 2100000, guid: e6c9e8b3119b3d04898a9f9001e5792b, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

@@ -3,7 +3,27 @@ guid: bd8e55766e23d5c49b31781398f0572e
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Dark Brown Leather PBR Material
+    second: {fileID: 2100000, guid: 432185cb1f8e75e43a645be7048f4e95, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Metal Naranja
+    second: {fileID: 2100000, guid: e55346a652726aa459dd7a1f7dd9c1f3, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Metal Negro
+    second: {fileID: 2100000, guid: db126053aa03cbd47bcc4c0617910972, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Metal Verde
+    second: {fileID: 2100000, guid: 1daa6c7e4dd26f948abe3ce6e60c87b3, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

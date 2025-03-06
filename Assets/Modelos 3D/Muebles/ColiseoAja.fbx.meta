@@ -3,7 +3,47 @@ guid: c402e217f8461134c952e07b22383a74
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Dirty concrete
+    second: {fileID: 2100000, guid: 398ceb6cc5c829043a78888c5b20d90d, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Glass provicional.001
+    second: {fileID: 2100000, guid: 0a23c50fb04fc0244a9da9eb7c0b87c1, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Metal Gris
+    second: {fileID: 2100000, guid: 3110285d36b747a42a3b9ebf430667a3, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Metal Negro.001
+    second: {fileID: 2100000, guid: ad4dc45c9c315824e91354f014ee552d, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Metal gris Oscuro
+    second: {fileID: 2100000, guid: 4ee5a7b00bf91f3489d3a3fd6142b409, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Metal gris Oscuro.001
+    second: {fileID: 2100000, guid: 55dcd8424677a6e46b39dda09e3296f0, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Paredes coliseo
+    second: {fileID: 2100000, guid: 0e0e7086815857e4cbdc1c8182a54366, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Policarbonato
+    second: {fileID: 2100000, guid: 60814ee8366b496468094e98e3d0859a, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

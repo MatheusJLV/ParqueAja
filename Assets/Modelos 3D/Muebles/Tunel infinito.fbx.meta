@@ -3,7 +3,22 @@ guid: 5e7a1c6ff7fe50b489ab0612bc7dcd29
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Focos tunel
+    second: {fileID: 2100000, guid: 8e84681a0cb995945b176fd6ccc71e15, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Material.002
+    second: {fileID: 2100000, guid: 922460e8cccfffa44bc090312f2da32e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Metal Negro
+    second: {fileID: 2100000, guid: db126053aa03cbd47bcc4c0617910972, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

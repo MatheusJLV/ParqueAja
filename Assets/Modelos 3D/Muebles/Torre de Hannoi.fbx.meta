@@ -3,7 +3,27 @@ guid: 6c77ad972c1e0b841a0ec4581844844c
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Oak hamilton
+    second: {fileID: 2100000, guid: c9be9665c54bc7347943cb6dcea35641, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Oak hamilton 2
+    second: {fileID: 2100000, guid: c55cd356d03101a4b9f53a9cbaba9203, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Oak hamilton 3
+    second: {fileID: 2100000, guid: 8362cc5199556254eaa49e72dbb3c447, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Oak hamilton Ocuro varnished
+    second: {fileID: 2100000, guid: a19ecceb410c9c34684bca2768dd80de, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

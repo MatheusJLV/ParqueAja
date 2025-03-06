@@ -3,7 +3,12 @@ guid: e395f7d95d497cc4aa6f6ef35d1c1f72
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Oak hamilton Ocuro
+    second: {fileID: 2100000, guid: a19ecceb410c9c34684bca2768dd80de, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

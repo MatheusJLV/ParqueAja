@@ -3,7 +3,32 @@ guid: b9fe5eefc63cac545baaa93ceb553fb5
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Metal Gris
+    second: {fileID: 2100000, guid: 3110285d36b747a42a3b9ebf430667a3, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Metal Negro
+    second: {fileID: 2100000, guid: db126053aa03cbd47bcc4c0617910972, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Metal Verde
+    second: {fileID: 2100000, guid: 1daa6c7e4dd26f948abe3ce6e60c87b3, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Metal Verde oscuro
+    second: {fileID: 2100000, guid: 2aedaef9b90473249b8b60633dbd7ec0, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Oak hamilton
+    second: {fileID: 2100000, guid: c9be9665c54bc7347943cb6dcea35641, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

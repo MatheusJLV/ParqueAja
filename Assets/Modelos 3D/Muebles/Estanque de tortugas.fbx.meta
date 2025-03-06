@@ -3,7 +3,22 @@ guid: 1f7ff66f828a70b4588fc99ccff7f31a
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Grass
+    second: {fileID: 2100000, guid: ac820928a8254a04fb0187358fe153e6, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Metal Negro
+    second: {fileID: 2100000, guid: db126053aa03cbd47bcc4c0617910972, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Tile
+    second: {fileID: 2100000, guid: 2c69c1df711bfa44d8197ca658f2cb01, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

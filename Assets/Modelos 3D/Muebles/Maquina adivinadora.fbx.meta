@@ -3,7 +3,37 @@ guid: bb29db34d50e9a24a9c5af63dd026ca2
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Material
+    second: {fileID: 2100000, guid: 65c705c8a6debe446a8c7607191c0460, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Metal Negro
+    second: {fileID: 2100000, guid: db126053aa03cbd47bcc4c0617910972, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Metal Verde oscuro
+    second: {fileID: 2100000, guid: 2aedaef9b90473249b8b60633dbd7ec0, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Metal gris Oscuro
+    second: {fileID: 2100000, guid: 4ee5a7b00bf91f3489d3a3fd6142b409, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Oak hamilton 2
+    second: {fileID: 2100000, guid: c55cd356d03101a4b9f53a9cbaba9203, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Pantalla apagada
+    second: {fileID: 2100000, guid: 891dbb6a504f687469ceebe2bf958791, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

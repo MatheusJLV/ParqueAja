@@ -3,7 +3,17 @@ guid: 33bac5530dc351d44963791e8ba411ed
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Madera Naranja
+    second: {fileID: 2100000, guid: 65c705c8a6debe446a8c7607191c0460, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Oak hamilton Ocuro oscuro varnished
+    second: {fileID: 2100000, guid: a19ecceb410c9c34684bca2768dd80de, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

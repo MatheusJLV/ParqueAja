@@ -1,9 +1,19 @@
 fileFormatVersion: 2
-guid: 3726faa4fff1e4a42a1e24b5e72b8981
+guid: 9daffc1a58116164f8905953795f637b
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Oak hamilton 2.001
+    second: {fileID: 2100000, guid: c55cd356d03101a4b9f53a9cbaba9203, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Oak hamilton 3.001
+    second: {fileID: 2100000, guid: 8362cc5199556254eaa49e72dbb3c447, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

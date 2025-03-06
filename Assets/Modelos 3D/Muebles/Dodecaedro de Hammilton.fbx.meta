@@ -3,7 +3,22 @@ guid: e025b09459f6b7e4999edbadbf9d58ec
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Oak hamilton 3
+    second: {fileID: 2100000, guid: 8362cc5199556254eaa49e72dbb3c447, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Oak hamilton naranja
+    second: {fileID: 2100000, guid: faee1880c7034b248973cf08868b4449, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Plastic black material
+    second: {fileID: 2100000, guid: f27c7a9d2c5d97246af9b8bd6329d232, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

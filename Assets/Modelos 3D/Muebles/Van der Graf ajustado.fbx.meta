@@ -1,9 +1,24 @@
 fileFormatVersion: 2
-guid: e2701a2231844fc4ba0e60e4ac38cf86
+guid: 10d8ee32e66c4634182ee53c967fd756
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Aluminio.001
+    second: {fileID: 2100000, guid: b14d09e275cbcb24a8283c69b99b5546, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Metal Verde oscuro.002
+    second: {fileID: 2100000, guid: c635e43bd540ebb42a3e97748bcd2417, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Plastic black material.001
+    second: {fileID: 2100000, guid: 0fa4f6f2ee899b8438fd4b9c67efea07, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
