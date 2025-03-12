@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 6c77ad972c1e0b841a0ec4581844844c
+guid: fdff3eced004e71469ba439b759a2b90
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
@@ -7,23 +7,8 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
-      name: Oak hamilton
-    second: {fileID: 2100000, guid: b2575fa426dd55740a52ef42ff6e9abf, type: 2}
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: Oak hamilton 2
-    second: {fileID: 2100000, guid: b1c9164c775fdb34ea6a675f525e7ac0, type: 2}
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: Oak hamilton 3
-    second: {fileID: 2100000, guid: 94ca64259d349f340a4699b46792157b, type: 2}
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: Oak hamilton Ocuro varnished
-    second: {fileID: 2100000, guid: ca539f4874747c744aed5dc64df57a5d, type: 2}
+      name: Metal Verde
+    second: {fileID: 2100000, guid: e6c4e39e61d19f44ea6acb3d9194e7e9, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
