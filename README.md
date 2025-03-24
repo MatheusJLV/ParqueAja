@@ -48,4 +48,10 @@ Special thanks to **ESPOL** and the **Parque de la Ciencia ¡Ajá!** team for ma
 - [Twitter](#)  
 - [LinkedIn](#)  
 
+## Disclaimer  
+This project is in early development. Some external assets, including but not limited to audio files, are temporarily used as placeholders for testing purposes. These assets are located in the `Assets/Music` directory and will be replaced before any public release.  
+
+No copyright infringement is intended. If you are the rightful owner of any asset and wish for its removal, please contact the development team.  
+
+
 --- 
