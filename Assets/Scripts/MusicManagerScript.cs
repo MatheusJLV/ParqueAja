@@ -159,36 +159,37 @@ public class MusicManagerScript : MonoBehaviour
             folderName = dropdown.options[dropdown.value].text;
         }
 
-        string path = Path.Combine(Application.dataPath, "Music", folderName);
-        if (Directory.Exists(path))
+        string resourcePath = "Music/" + folderName;
+        AudioClip[] clips = Resources.LoadAll<AudioClip>(resourcePath);
+        if (clips.Length > 0)
         {
-            string[] files = Directory.GetFiles(path, "*.mp3");
-            if (files.Length > 0)
+            musicClips.Clear();
+            foreach (AudioClip clip in clips)
             {
-                musicClips.Clear();
-                foreach (string file in files)
-                {
-                    string relativePath = "Music/" + folderName + "/" + Path.GetFileNameWithoutExtension(file);
-                    AudioClip clip = Resources.Load<AudioClip>(relativePath);
-                    if (clip != null)
-                    {
-                        musicClips.Add(clip);
-                    }
-                }
-
-                if (musicClips.Count == 0)
-                {
-                    Debug.LogWarning("No valid music files found in the specified folder.");
-                }
+                musicClips.Add(clip);
             }
-            else
+
+            if (musicClips.Count == 0)
             {
-                Debug.LogWarning("No music files found in the specified folder.");
+                Debug.LogWarning("No valid music files found in the specified folder.");
             }
         }
         else
         {
-            Debug.LogError("The specified folder does not exist: " + path);
+            Debug.LogWarning("No music files found in the specified folder.");
+        }
+    }
+
+    // Play or pause the music based on the current state
+    public void PlayPause()
+    {
+        if (audioSource.isPlaying)
+        {
+            PauseMusic();
+        }
+        else
+        {
+            PlayMusic();
         }
     }
 }
