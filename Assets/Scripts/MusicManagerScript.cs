@@ -19,11 +19,8 @@ public class MusicManagerScript : MonoBehaviour
     [SerializeField]
     private GameObject sliderObject; // Reference to the slider GameObject
 
-
-
     private TMP_Dropdown dropdown; // Reference to the TMP_Dropdown component
     private Slider volumeSlider; // Reference to the Slider component
-    
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -46,13 +43,11 @@ public class MusicManagerScript : MonoBehaviour
             volumeSlider.onValueChanged.AddListener(delegate { SetVolume(); });
         }
 
-        
-
         LoadMusicClips(); // Load default music clips
 
         if (musicClips.Count > 0)
         {
-            PlayMusic();
+            PlayRandomMusic();
         }
     }
 
@@ -73,6 +68,16 @@ public class MusicManagerScript : MonoBehaviour
         {
             audioSource.clip = musicClips[currentTrackIndex];
             audioSource.Play();
+        }
+    }
+
+    // Play a random track
+    public void PlayRandomMusic()
+    {
+        if (musicClips.Count > 0)
+        {
+            currentTrackIndex = Random.Range(0, musicClips.Count);
+            PlayMusic();
         }
     }
 
@@ -186,7 +191,4 @@ public class MusicManagerScript : MonoBehaviour
             Debug.LogError("The specified folder does not exist: " + path);
         }
     }
-
-    // Set the active state of the objects in the list based on the toggle value
-    
 }
