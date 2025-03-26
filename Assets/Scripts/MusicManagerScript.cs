@@ -10,7 +10,24 @@ public class MusicManagerScript : MonoBehaviour
     [SerializeField]
     private List<AudioClip> musicClips; // List of music clips
 
-    private AudioSource audioSource; // AudioSource component
+    [SerializeField]
+    private List<AudioClip> Accion; // List of Accion music clips
+
+    [SerializeField]
+    private List<AudioClip> Favoritas; // List of Favoritas music clips
+
+    [SerializeField]
+    private List<AudioClip> Relax; // List of Relax music clips
+
+    [SerializeField]
+    private List<AudioClip> Sass; // List of Sass music clips
+
+    [SerializeField]
+    private List<AudioClip> DefaultList; // List of Default music clips
+
+    [SerializeField]
+    private AudioSource audioSource; // Reference to the AudioSource component
+
     private int currentTrackIndex = 0; // Index of the current track
 
     [SerializeField]
@@ -22,14 +39,15 @@ public class MusicManagerScript : MonoBehaviour
     private TMP_Dropdown dropdown; // Reference to the TMP_Dropdown component
     private Slider volumeSlider; // Reference to the Slider component
 
+    private bool playPauseCalled = false; // Flag to indicate if PlayPause was called
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        audioSource = GetComponent<AudioSource>();
-
         if (audioSource == null)
         {
-            audioSource = gameObject.AddComponent<AudioSource>();
+            Debug.LogError("AudioSource is not assigned.");
+            return;
         }
 
         if (dropdownObject != null)
@@ -55,7 +73,7 @@ public class MusicManagerScript : MonoBehaviour
     void Update()
     {
         // Automatically play the next song when the current one finishes
-        if (!audioSource.isPlaying && musicClips.Count > 0)
+        if (!audioSource.isPlaying && musicClips.Count > 0 && !playPauseCalled)
         {
             NextSong();
         }
@@ -68,6 +86,7 @@ public class MusicManagerScript : MonoBehaviour
         {
             audioSource.clip = musicClips[currentTrackIndex];
             audioSource.Play();
+            playPauseCalled = false;
         }
     }
 
@@ -87,6 +106,7 @@ public class MusicManagerScript : MonoBehaviour
         if (audioSource.isPlaying)
         {
             audioSource.Pause();
+            playPauseCalled = true;
         }
     }
 
@@ -96,6 +116,7 @@ public class MusicManagerScript : MonoBehaviour
         if (audioSource.isPlaying)
         {
             audioSource.Stop();
+            playPauseCalled = true;
         }
     }
 
@@ -150,7 +171,7 @@ public class MusicManagerScript : MonoBehaviour
         }
     }
 
-    // Load music clips from the specified folder
+    // Load music clips from the specified list
     public void LoadMusicClips()
     {
         string folderName = "Default";
@@ -159,37 +180,55 @@ public class MusicManagerScript : MonoBehaviour
             folderName = dropdown.options[dropdown.value].text;
         }
 
-        string resourcePath = "Music/" + folderName;
-        AudioClip[] clips = Resources.LoadAll<AudioClip>(resourcePath);
-        if (clips.Length > 0)
+        switch (folderName)
         {
-            musicClips.Clear();
-            foreach (AudioClip clip in clips)
-            {
-                musicClips.Add(clip);
-            }
-
-            if (musicClips.Count == 0)
-            {
-                Debug.LogWarning("No valid music files found in the specified folder.");
-            }
+            case "Accion":
+                musicClips = new List<AudioClip>(Accion);
+                PlayRandomMusic();
+                break;
+            case "Favoritas":
+                musicClips = new List<AudioClip>(Favoritas);
+                PlayRandomMusic();
+                break;
+            case "Relax":
+                musicClips = new List<AudioClip>(Relax);
+                PlayRandomMusic();
+                break;
+            case "Sass":
+                musicClips = new List<AudioClip>(Sass);
+                PlayRandomMusic();
+                break;
+            case "Default":
+                musicClips = new List<AudioClip>(DefaultList);
+                PlayRandomMusic();
+                break;
+            default:
+                Debug.LogWarning("No matching music list found for: " + folderName);
+                musicClips.Clear();
+                break;
         }
-        else
+
+        if (musicClips.Count == 0)
         {
-            Debug.LogWarning("No music files found in the specified folder.");
+            Debug.LogWarning("No valid music files found in the specified list.");
         }
     }
 
     // Play or pause the music based on the current state
     public void PlayPause()
     {
+        playPauseCalled = true; // Set the flag to indicate PlayPause was called
+
         if (audioSource.isPlaying)
         {
             PauseMusic();
         }
         else
         {
-            PlayMusic();
+            PlayMusic();            
         }
+
+        // Reset the flag after handling PlayPause
+        
     }
 }
