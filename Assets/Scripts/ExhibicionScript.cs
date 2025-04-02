@@ -31,6 +31,9 @@ public class ExhibicionScript : MonoBehaviour
                 storedRotations.Add(obj.transform.rotation);
             }
         }
+
+        // Call SuspensionExhibicion to suspend the exhibition at the start
+        SuspensionExhibicion();
     }
 
     // Update is called once per frame
@@ -77,32 +80,68 @@ public class ExhibicionScript : MonoBehaviour
         Cargar();
     }
 
+    // Method to reactivate the exhibition when another collider enters the trigger collider
+    public void ReactivacionExhibicion()
+    {
+        foreach (GameObject obj in objetosContenidos)
+        {
+            if (obj != null)
+            {
+                // Enable Rigidbody components
+                Rigidbody[] rigidbodies = obj.GetComponents<Rigidbody>();
+                foreach (Rigidbody rb in rigidbodies)
+                {
+                    rb.isKinematic = false;
+                    rb.detectCollisions = true;
+                }
+            }
+        }
+
+        foreach (GameObject obj in elementosPausa)
+        {
+            if (obj != null)
+            {
+                obj.SetActive(true); // Activate the game object
+            }
+        }
+    }
+
+    // Method to suspend the exhibition when another collider exits the trigger collider
+    public void SuspensionExhibicion()
+    {
+        foreach (GameObject obj in objetosContenidos)
+        {
+            if (obj != null)
+            {
+                XRGrabInteractable grabInteractable = obj.GetComponent<XRGrabInteractable>();
+                if (grabInteractable == null || !grabInteractable.isSelected)
+                {
+                    // Disable Rigidbody components
+                    Rigidbody[] rigidbodies = obj.GetComponents<Rigidbody>();
+                    foreach (Rigidbody rb in rigidbodies)
+                    {
+                        rb.isKinematic = true;
+                        rb.detectCollisions = false;
+                    }
+                }
+            }
+        }
+
+        foreach (GameObject obj in elementosPausa)
+        {
+            if (obj != null)
+            {
+                obj.SetActive(false); // Deactivate the game object
+            }
+        }
+    }
+
     // Method called when another collider enters the trigger collider
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player")) // Check if the entering object is tagged as "Player"
         {
-            foreach (GameObject obj in objetosContenidos)
-            {
-                if (obj != null)
-                {
-                    // Enable Rigidbody components
-                    Rigidbody[] rigidbodies = obj.GetComponents<Rigidbody>();
-                    foreach (Rigidbody rb in rigidbodies)
-                    {
-                        rb.isKinematic = false;
-                        rb.detectCollisions = true;
-                    }
-                }
-            }
-
-            foreach (GameObject obj in elementosPausa)
-            {
-                if (obj != null)
-                {
-                    obj.SetActive(true); // Activate the game object
-                }
-            }
+            ReactivacionExhibicion();
         }
     }
 
@@ -111,31 +150,7 @@ public class ExhibicionScript : MonoBehaviour
     {
         if (other.CompareTag("Player")) // Check if the exiting object is tagged as "Player"
         {
-            foreach (GameObject obj in objetosContenidos)
-            {
-                if (obj != null)
-                {
-                    XRGrabInteractable grabInteractable = obj.GetComponent<XRGrabInteractable>();
-                    if (grabInteractable == null || !grabInteractable.isSelected)
-                    {
-                        // Disable Rigidbody components
-                        Rigidbody[] rigidbodies = obj.GetComponents<Rigidbody>();
-                        foreach (Rigidbody rb in rigidbodies)
-                        {
-                            rb.isKinematic = true;
-                            rb.detectCollisions = false;
-                        }
-                    }
-                }
-            }
-
-            foreach (GameObject obj in elementosPausa)
-            {
-                if (obj != null)
-                {
-                    obj.SetActive(false); // Deactivate the game object
-                }
-            }
+            SuspensionExhibicion();
         }
     }
 }

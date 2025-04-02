@@ -46,7 +46,7 @@ public class MusicManagerScript : MonoBehaviour
     {
         if (audioSource == null)
         {
-            Debug.LogError("AudioSource is not assigned.");
+            Debug.LogError("audioSource is null in Start method of MusicManagerScript");
             return;
         }
 
@@ -54,11 +54,19 @@ public class MusicManagerScript : MonoBehaviour
         {
             dropdown = dropdownObject.GetComponent<TMP_Dropdown>();
         }
+        else
+        {
+            Debug.LogError("dropdownObject is null in Start method of MusicManagerScript");
+        }
 
         if (sliderObject != null)
         {
             volumeSlider = sliderObject.GetComponent<Slider>();
             volumeSlider.onValueChanged.AddListener(delegate { SetVolume(); });
+        }
+        else
+        {
+            Debug.LogError("sliderObject is null in Start method of MusicManagerScript");
         }
 
         LoadMusicClips(); // Load default music clips
@@ -67,15 +75,22 @@ public class MusicManagerScript : MonoBehaviour
         {
             PlayRandomMusic();
         }
+
+        // Start the coroutine to check the audio status
+        StartCoroutine(CheckAudioStatus());
     }
 
-    // Update is called once per frame
-    void Update()
+    // Coroutine to check the audio status
+    private IEnumerator CheckAudioStatus()
     {
-        // Automatically play the next song when the current one finishes
-        if (!audioSource.isPlaying && musicClips.Count > 0 && !playPauseCalled)
+        while (true)
         {
-            NextSong();
+            yield return new WaitForSeconds(1f); // Check every second
+
+            if (!audioSource.isPlaying && musicClips.Count > 0 && !playPauseCalled)
+            {
+                NextSong();
+            }
         }
     }
 
@@ -88,6 +103,10 @@ public class MusicManagerScript : MonoBehaviour
             audioSource.Play();
             playPauseCalled = false;
         }
+        else
+        {
+            Debug.LogError("musicClips is empty in PlayMusic method of MusicManagerScript");
+        }
     }
 
     // Play a random track
@@ -97,6 +116,10 @@ public class MusicManagerScript : MonoBehaviour
         {
             currentTrackIndex = Random.Range(0, musicClips.Count);
             PlayMusic();
+        }
+        else
+        {
+            Debug.LogError("musicClips is empty in PlayRandomMusic method of MusicManagerScript");
         }
     }
 
@@ -108,6 +131,10 @@ public class MusicManagerScript : MonoBehaviour
             audioSource.Pause();
             playPauseCalled = true;
         }
+        else
+        {
+            Debug.LogError("audioSource is not playing in PauseMusic method of MusicManagerScript");
+        }
     }
 
     // Stop the current track
@@ -117,6 +144,10 @@ public class MusicManagerScript : MonoBehaviour
         {
             audioSource.Stop();
             playPauseCalled = true;
+        }
+        else
+        {
+            Debug.LogError("audioSource is not playing in StopMusic method of MusicManagerScript");
         }
     }
 
@@ -128,6 +159,10 @@ public class MusicManagerScript : MonoBehaviour
             currentTrackIndex = (currentTrackIndex + 1) % musicClips.Count;
             PlayMusic();
         }
+        else
+        {
+            Debug.LogError("musicClips is empty in NextSong method of MusicManagerScript");
+        }
     }
 
     // Play the previous track in the list
@@ -137,6 +172,10 @@ public class MusicManagerScript : MonoBehaviour
         {
             currentTrackIndex = (currentTrackIndex - 1 + musicClips.Count) % musicClips.Count;
             PlayMusic();
+        }
+        else
+        {
+            Debug.LogError("musicClips is empty in PreviousSong method of MusicManagerScript");
         }
     }
 
@@ -151,6 +190,7 @@ public class MusicManagerScript : MonoBehaviour
         }
         else
         {
+            Debug.LogError("songName not found in PlaySongByName method of MusicManagerScript");
             StartCoroutine(ResumeCurrentTrackAfterDelay(1f));
         }
     }
@@ -169,6 +209,10 @@ public class MusicManagerScript : MonoBehaviour
         {
             audioSource.volume = Mathf.Clamp01(volumeSlider.value);
         }
+        else
+        {
+            Debug.LogError("volumeSlider is null in SetVolume method of MusicManagerScript");
+        }
     }
 
     // Load music clips from the specified list
@@ -178,6 +222,10 @@ public class MusicManagerScript : MonoBehaviour
         if (dropdown != null)
         {
             folderName = dropdown.options[dropdown.value].text;
+        }
+        else
+        {
+            Debug.LogError("dropdown is null in LoadMusicClips method of MusicManagerScript");
         }
 
         switch (folderName)
@@ -225,10 +273,7 @@ public class MusicManagerScript : MonoBehaviour
         }
         else
         {
-            PlayMusic();            
+            PlayMusic();
         }
-
-        // Reset the flag after handling PlayPause
-        
     }
 }
