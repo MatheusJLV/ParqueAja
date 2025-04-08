@@ -6,6 +6,14 @@ public class ExhibicionGeneralManagerScript : MonoBehaviour
     [SerializeField]
     private List<GameObject> exhibiciones; // List of game objects containing ExhibicionScript
 
+    [SerializeField]
+    private List<GameObject> calibracionTarget; // List of game objects to be calibrated
+
+    [SerializeField]
+    private GameObject AlturaCamara; // Reference to the camera height game object
+
+    private const float referenceHeight = 1.77f; // Reference height
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
@@ -136,6 +144,30 @@ public class ExhibicionGeneralManagerScript : MonoBehaviour
         catch (System.Exception ex)
         {
             Debug.LogError("Exception in SuspensionExhibicion method of ExhibicionGeneralManagerScript: " + ex.Message);
+        }
+    }
+
+    // Method to calibrate the positions of the objects in calibracionTarget
+    public void Calibrar()
+    {
+        if (AlturaCamara != null)
+        {
+            float alturaCamaraY = AlturaCamara.transform.position.y;
+            float adjustment = referenceHeight - alturaCamaraY;
+
+            foreach (GameObject target in calibracionTarget)
+            {
+                if (target != null)
+                {
+                    Vector3 newPosition = target.transform.position;
+                    newPosition.y += adjustment;
+                    target.transform.position = newPosition;
+                }
+            }
+        }
+        else
+        {
+            Debug.LogError("AlturaCamara is not set in Calibrar method of ExhibicionGeneralManagerScript");
         }
     }
 

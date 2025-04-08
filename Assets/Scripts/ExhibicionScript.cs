@@ -14,14 +14,35 @@ public class ExhibicionScript : MonoBehaviour
     private List<GameObject> elementosPausa; // List of game objects to pause
 
     [SerializeField]
+    private List<GameObject> objetosContenidosParents; // List of parent game objects containing children
+
+    [SerializeField]
+    private List<GameObject> prefabsExhibicionParents; // List of parent prefabs containing children
+
+    [SerializeField]
     private float escala = 1f; // Scale factor for instantiated objects, default value is 1
 
     private List<Vector3> storedPositions = new List<Vector3>(); // List to store positions
     private List<Quaternion> storedRotations = new List<Quaternion>(); // List to store rotations
 
+    private List<Vector3> storedPositionsParents = new List<Vector3>(); // List to store parent positions
+    private List<Quaternion> storedRotationsParents = new List<Quaternion>(); // List to store parent rotations
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
+        // Check if objetosContenidos and prefabsExhibicion are the same size
+        if (objetosContenidos.Count != prefabsExhibicion.Count)
+        {
+            Debug.LogWarning("objetosContenidos and prefabsExhibicion are not the same size.");
+        }
+
+        // Check if objetosContenidosParents and prefabsExhibicionParents are the same size
+        if (objetosContenidosParents.Count != prefabsExhibicionParents.Count)
+        {
+            Debug.LogWarning("objetosContenidosParents and prefabsExhibicionParents are not the same size.");
+        }
+
         // Store the positions and rotations of the game objects in objetosContenidos
         foreach (GameObject obj in objetosContenidos)
         {
@@ -32,17 +53,21 @@ public class ExhibicionScript : MonoBehaviour
             }
         }
 
+        // Store the positions and rotations of the parent game objects in objetosContenidosParents
+        foreach (GameObject parent in objetosContenidosParents)
+        {
+            if (parent != null)
+            {
+                storedPositionsParents.Add(parent.transform.position);
+                storedRotationsParents.Add(parent.transform.rotation);
+            }
+        }
+
         // Call SuspensionExhibicion to suspend the exhibition at the start
         SuspensionExhibicion();
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-
-    }
-
-    // Method to delete all game objects in objetosContenidos
+    // Method to delete all game objects in objetosContenidos and objetosContenidosParents
     public void Eliminar()
     {
         foreach (GameObject obj in objetosContenidos)
@@ -53,21 +78,47 @@ public class ExhibicionScript : MonoBehaviour
             }
         }
         objetosContenidos.Clear();
+
+        foreach (GameObject parent in objetosContenidosParents)
+        {
+            if (parent != null)
+            {
+                Destroy(parent);
+            }
+        }
+        objetosContenidosParents.Clear();
     }
 
     // Method to load prefabs using the stored positions and rotations
     public void Cargar()
     {
+        int index = 0;
+
         for (int i = 0; i < prefabsExhibicion.Count; i++)
         {
-            if (i < storedPositions.Count && i < storedRotations.Count)
+            if (index < storedPositions.Count && index < storedRotations.Count)
             {
                 GameObject prefab = prefabsExhibicion[i];
                 if (prefab != null)
                 {
-                    GameObject instance = Instantiate(prefab, storedPositions[i], storedRotations[i]);
+                    GameObject instance = Instantiate(prefab, storedPositions[index], storedRotations[index]);
                     instance.transform.localScale *= escala; // Scale the instance by the specified scale factor
                     objetosContenidos.Add(instance);
+                    index++;
+                }
+            }
+        }
+
+        for (int i = 0; i < prefabsExhibicionParents.Count; i++)
+        {
+            if (i < storedPositionsParents.Count && i < storedRotationsParents.Count)
+            {
+                GameObject parentPrefab = prefabsExhibicionParents[i];
+                if (parentPrefab != null)
+                {
+                    GameObject parentInstance = Instantiate(parentPrefab, storedPositionsParents[i], storedRotationsParents[i]);
+                    parentInstance.transform.localScale *= escala; // Scale the instance by the specified scale factor
+                    objetosContenidosParents.Add(parentInstance);
                 }
             }
         }
@@ -97,6 +148,23 @@ public class ExhibicionScript : MonoBehaviour
             }
         }
 
+        foreach (GameObject parent in objetosContenidosParents)
+        {
+            if (parent != null)
+            {
+                foreach (Transform child in parent.transform)
+                {
+                    // Enable Rigidbody components
+                    Rigidbody[] rigidbodies = child.GetComponents<Rigidbody>();
+                    foreach (Rigidbody rb in rigidbodies)
+                    {
+                        rb.isKinematic = false;
+                        rb.detectCollisions = true;
+                    }
+                }
+            }
+        }
+
         foreach (GameObject obj in elementosPausa)
         {
             if (obj != null)
@@ -122,6 +190,27 @@ public class ExhibicionScript : MonoBehaviour
                     {
                         rb.isKinematic = true;
                         rb.detectCollisions = false;
+                    }
+                }
+            }
+        }
+
+        foreach (GameObject parent in objetosContenidosParents)
+        {
+            if (parent != null)
+            {
+                foreach (Transform child in parent.transform)
+                {
+                    XRGrabInteractable grabInteractable = child.GetComponent<XRGrabInteractable>();
+                    if (grabInteractable == null || !grabInteractable.isSelected)
+                    {
+                        // Disable Rigidbody components
+                        Rigidbody[] rigidbodies = child.GetComponents<Rigidbody>();
+                        foreach (Rigidbody rb in rigidbodies)
+                        {
+                            rb.isKinematic = true;
+                            rb.detectCollisions = false;
+                        }
                     }
                 }
             }
