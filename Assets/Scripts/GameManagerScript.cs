@@ -3,6 +3,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using UnityEngine.XR.Interaction.Toolkit.Interactors;
 using UnityEngine.XR.Interaction.Toolkit.Locomotion.Teleportation;
 
 public class GameManagerScript : MonoBehaviour
@@ -22,6 +23,19 @@ public class GameManagerScript : MonoBehaviour
     private Toggle toggle; // Reference to the Toggle component
     private TMP_Dropdown dropdown; // Reference to the TMP_Dropdown component
 
+    // New variables for Left and Right controllers
+    [SerializeField]
+    private NearFarInteractor leftNearFarInteractor; // Reference to the Near-Far Interactor for the left controller
+
+    [SerializeField]
+    private TMP_Dropdown leftDropdown; // Reference to the Dropdown for the left controller
+
+    [SerializeField]
+    private NearFarInteractor rightNearFarInteractor; // Reference to the Near-Far Interactor for the right controller
+
+    [SerializeField]
+    private TMP_Dropdown rightDropdown; // Reference to the Dropdown for the right controller
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
@@ -35,6 +49,17 @@ public class GameManagerScript : MonoBehaviour
         {
             dropdown = dropdownObject.GetComponent<TMP_Dropdown>();
             dropdown.onValueChanged.AddListener(delegate { TeleportToSelectedAnchor(); });
+        }
+
+        // Add listeners for the Left and Right dropdowns
+        if (leftDropdown != null)
+        {
+            leftDropdown.onValueChanged.AddListener(delegate { HandleLeftDropdownSelection(); });
+        }
+
+        if (rightDropdown != null)
+        {
+            rightDropdown.onValueChanged.AddListener(delegate { HandleRightDropdownSelection(); });
         }
     }
 
@@ -83,6 +108,68 @@ public class GameManagerScript : MonoBehaviour
                         break;
                     }
                 }
+            }
+        }
+    }
+
+    // Method to handle the Left Dropdown selection
+    public void HandleLeftDropdownSelection()
+    {
+        if (leftDropdown != null && leftNearFarInteractor != null)
+        {
+            string selectedOption = leftDropdown.options[leftDropdown.value].text;
+
+            switch (selectedOption)
+            {
+                case "Near":
+                    leftNearFarInteractor.enableNearCasting = true;
+                    leftNearFarInteractor.enableFarCasting = false;
+                    break;
+
+                case "Far":
+                    leftNearFarInteractor.enableNearCasting = false;
+                    leftNearFarInteractor.enableFarCasting = true;
+                    break;
+
+                case "Hibrido":
+                    leftNearFarInteractor.enableNearCasting = true;
+                    leftNearFarInteractor.enableFarCasting = true;
+                    break;
+
+                default:
+                    Debug.LogWarning("Unknown option selected in Left Dropdown.");
+                    break;
+            }
+        }
+    }
+
+    // Method to handle the Right Dropdown selection
+    public void HandleRightDropdownSelection()
+    {
+        if (rightDropdown != null && rightNearFarInteractor != null)
+        {
+            string selectedOption = rightDropdown.options[rightDropdown.value].text;
+
+            switch (selectedOption)
+            {
+                case "Near":
+                    rightNearFarInteractor.enableNearCasting = true;
+                    rightNearFarInteractor.enableFarCasting = false;
+                    break;
+
+                case "Far":
+                    rightNearFarInteractor.enableNearCasting = false;
+                    rightNearFarInteractor.enableFarCasting = true;
+                    break;
+
+                case "Hibrido":
+                    rightNearFarInteractor.enableNearCasting = true;
+                    rightNearFarInteractor.enableFarCasting = true;
+                    break;
+
+                default:
+                    Debug.LogWarning("Unknown option selected in Right Dropdown.");
+                    break;
             }
         }
     }

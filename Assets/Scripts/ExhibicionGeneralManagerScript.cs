@@ -12,7 +12,10 @@ public class ExhibicionGeneralManagerScript : MonoBehaviour
     [SerializeField]
     private GameObject AlturaCamara; // Reference to the camera height game object
 
-    private const float referenceHeight = 1.77f; // Reference height
+    private const float referenceHeightDif = 0.6f; // Reference height
+
+    [SerializeField]
+    private Transform PtoReferencia; // List of game objects containing ExhibicionScript
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -153,14 +156,15 @@ public class ExhibicionGeneralManagerScript : MonoBehaviour
         if (AlturaCamara != null)
         {
             float alturaCamaraY = AlturaCamara.transform.position.y;
-            float adjustment = referenceHeight - alturaCamaraY;
+            float referencia = PtoReferencia.position.y;
+            float adjustment = referenceHeightDif - (alturaCamaraY - referencia);
 
             foreach (GameObject target in calibracionTarget)
             {
                 if (target != null)
                 {
                     Vector3 newPosition = target.transform.position;
-                    newPosition.y += adjustment;
+                    newPosition.y -= adjustment;
                     target.transform.position = newPosition;
                 }
             }
