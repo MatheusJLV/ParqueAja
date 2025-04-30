@@ -11,6 +11,10 @@ public class GaltonScript : MonoBehaviour
     public int cantidad = 0;
     public float escala = 1f; // Nueva variable para definir la escala
 
+    // Nuevas variables de posiciones referencia
+    public Transform referencia1;
+    public Transform referencia2;
+
     // Variables de UI
     public Slider cantidadSlider;
     public Slider tiempoSlider;
@@ -33,7 +37,7 @@ public class GaltonScript : MonoBehaviour
 
         // Suscribirse al evento del botón
         boton.onClick.AddListener(OnBotonPresionado);
-        Instanciar(5);
+        //Instanciar(5);
     }
 
     // Método llamado cuando se presiona el botón
@@ -72,20 +76,47 @@ public class GaltonScript : MonoBehaviour
     {
         while (cantidad > 0)
         {
-            Debug.Log("Instanciando bolita: " + cantidad + " en " + bolas.transform.position);
+            Debug.Log("Instanciando bolitas: " + cantidad);
 
-            // Instanciar una nueva bolita en la posición de "bolas" y asignarla como hijo
-            GameObject nuevaBolita = Instantiate(bolita, bolas.transform.position, Quaternion.identity);
-            nuevaBolita.transform.SetParent(bolas.transform); // Usar SetParent para asignar el padre
+            // Validar si 'bolas' es null y buscarlo si es necesario
+            if (bolas == null)
+            {
+                Debug.LogWarning("'bolas' es null. Buscando el GameObject 'Bolas' como hijo del GameObject actual.");
+                bolas = transform.Find("Bolas")?.gameObject;
 
-            // Aplicar la escala al objeto instanciado
-            nuevaBolita.transform.localScale = Vector3.one * escala;
+                if (bolas == null)
+                {
+                    Debug.LogError("No se encontró un GameObject llamado 'Bolas' como hijo del GameObject actual.");
+                    yield break; // Salir de la corutina si no se encuentra 'bolas'
+                }
+            }
+
+            // Instanciar la bolita en la posición de "bolas"
+            GameObject bolita1 = Instantiate(bolita, bolas.transform.position, Quaternion.identity);
+            bolita1.transform.SetParent(bolas.transform); // Asignar como hijo de "bolas"
+            bolita1.transform.localScale = Vector3.one * escala; // Aplicar escala
+
+            // Instanciar la bolita en la posición de "referencia1"
+            if (referencia1 != null)
+            {
+                GameObject bolita2 = Instantiate(bolita, referencia1.position, Quaternion.identity);
+                bolita2.transform.SetParent(bolas.transform); // Asignar como hijo de "bolas"
+                bolita2.transform.localScale = Vector3.one * escala; // Aplicar escala
+            }
+
+            // Instanciar la bolita en la posición de "referencia2"
+            if (referencia2 != null)
+            {
+                GameObject bolita3 = Instantiate(bolita, referencia2.position, Quaternion.identity);
+                bolita3.transform.SetParent(bolas.transform); // Asignar como hijo de "bolas"
+                bolita3.transform.localScale = Vector3.one * escala; // Aplicar escala
+            }
 
             // Reducir la cantidad en 1
             cantidad--;
 
             // Esperar el tiempo especificado antes de la siguiente iteración
-            float tiempoEspera = tiempo/ tiempoSlider.value;
+            float tiempoEspera = tiempo / tiempoSlider.value;
             yield return new WaitForSeconds(tiempoEspera);
         }
     }
