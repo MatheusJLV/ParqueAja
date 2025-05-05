@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -26,6 +27,17 @@ public class GiroscopioScript : MonoBehaviour
     public GameObject asientoGO; // GameObject que será el padre del jugador
     public GameObject jugadorRig; // GameObject que representa al jugador
 
+    // Sliders para controlar velocidad y aceleración
+    public Slider velocidadSlider; // Slider para controlar la velocidad máxima
+    public Slider aceleracionSlider; // Slider para controlar la aceleración
+
+    public int duracion = 10; // Duración predeterminada de la animación
+    public Button iniciarGiroscopioBtn; // Botón para iniciar el giroscopio
+
+
+
+    public bool manualContoller = false; // Variable para controlar el uso manual del controlador
+
     void Start()
     {
         // Suscribirse a los eventos onClick de los botones
@@ -37,6 +49,71 @@ public class GiroscopioScript : MonoBehaviour
         if (salidaBtn != null)
         {
             salidaBtn.onClick.AddListener(OnSalidaButtonClicked);
+        }
+
+        // Suscribirse a los eventos de cambio de valor de los sliders
+        if (velocidadSlider != null)
+        {
+            velocidadSlider.onValueChanged.AddListener(OnVelocidadSliderChanged);
+        }
+
+        if (aceleracionSlider != null)
+        {
+            aceleracionSlider.onValueChanged.AddListener(OnAceleracionSliderChanged);
+        }
+
+        // Suscribirse al evento onClick del botón iniciarGiroscopioBtn
+        if (iniciarGiroscopioBtn != null)
+        {
+            iniciarGiroscopioBtn.onClick.AddListener(OnIniciarGiroscopioButtonClicked);
+        }
+    }
+
+    // Método para manejar el cambio de valor del slider de velocidad
+    private void OnVelocidadSliderChanged(float value)
+    {
+        velocidadMaxima = value;
+        Debug.Log($"Velocidad máxima actualizada a: {velocidadMaxima}");
+    }
+
+    // Método para manejar el cambio de valor del slider de aceleración
+    private void OnAceleracionSliderChanged(float value)
+    {
+        aceleracion = value;
+        Debug.Log($"Aceleración actualizada a: {aceleracion}");
+    }
+
+    private void OnIniciarGiroscopioButtonClicked()
+    {
+        iniciarGiroscopio(duracion);
+        Debug.Log($"Giroscopio iniciado con duración: {duracion} segundos.");
+    }
+
+    void OnDestroy()
+    {
+        if (iniciarGiroscopioBtn != null)
+        {
+            iniciarGiroscopioBtn.onClick.RemoveListener(OnIniciarGiroscopioButtonClicked);
+        }
+
+        if (velocidadSlider != null)
+        {
+            velocidadSlider.onValueChanged.RemoveListener(OnVelocidadSliderChanged);
+        }
+
+        if (aceleracionSlider != null)
+        {
+            aceleracionSlider.onValueChanged.RemoveListener(OnAceleracionSliderChanged);
+        }
+
+        if (entradaBtn != null)
+        {
+            entradaBtn.onClick.RemoveListener(OnEntradaButtonClicked);
+        }
+
+        if (salidaBtn != null)
+        {
+            salidaBtn.onClick.RemoveListener(OnSalidaButtonClicked);
         }
     }
 
@@ -89,8 +166,7 @@ public class GiroscopioScript : MonoBehaviour
             Debug.LogWarning("jugadorRig no está asignado.");
         }
     }
-
-    void Update()
+    private void controlacionManual()
     {
         // Obtén los dispositivos de las manos derecha e izquierda
         var rightHandDevices = new List<InputDevice>();
@@ -162,5 +238,101 @@ public class GiroscopioScript : MonoBehaviour
         {
             aroInterno.transform.Rotate(Vector3.forward * rotationSpeedInterno * Time.deltaTime, Space.Self);
         }
+    }
+
+    void Update()
+    {
+        if (manualContoller)
+        {
+            controlacionManual();
+        }
+        
+    }
+    public void iniciarGiroscopio(int duracion)
+    {
+        StartCoroutine(AnimarGiroscopio(duracion));
+    }
+
+    private IEnumerator AnimarGiroscopio(int duracion)
+    {
+        yield return StartCoroutine(Fase1(duracion));
+        yield return StartCoroutine(Fase2());
+        yield return StartCoroutine(Fase3());
+
+        Debug.Log("Animación del giroscopio completada.");
+    }
+    
+    private IEnumerator Fase1(int duracion)
+    {
+        float tiempoTranscurrido = 0f;
+        // Fase 1: Aceleración hasta la velocidad máxima
+        while (tiempoTranscurrido < duracion)
+        {
+            tiempoTranscurrido += Time.deltaTime;
+
+            // Incrementa la velocidad de los aros hasta la velocidad máxima
+            rotationSpeedExterno = Mathf.Min(rotationSpeedExterno +  2*aceleracion * Time.deltaTime, velocidadMaxima);
+            rotationSpeedInterno = Mathf.Min(rotationSpeedInterno +  2*aceleracion * Time.deltaTime, velocidadMaxima);
+
+            // Aplica la rotación a los aros
+            aroExterno.transform.Rotate(Vector3.right * rotationSpeedExterno * Time.deltaTime, Space.Self);
+            aroInterno.transform.Rotate(Vector3.forward * rotationSpeedInterno * Time.deltaTime, Space.Self);
+
+            yield return null; // Espera al siguiente frame
+        }
+    }
+
+    private IEnumerator Fase2()
+    {
+        // Fase 2: Mantener la velocidad máxima durante un tiempo
+        float tiempoMantener = 2f; // Tiempo en segundos para mantener la velocidad máxima
+        float tiempoTranscurrido = 0f;
+        while (tiempoTranscurrido < tiempoMantener)
+        {
+            tiempoTranscurrido += Time.deltaTime;
+
+            // Aplica la rotación a los aros
+            aroExterno.transform.Rotate(Vector3.right * rotationSpeedExterno * Time.deltaTime, Space.Self);
+            aroInterno.transform.Rotate(Vector3.forward * rotationSpeedInterno * Time.deltaTime, Space.Self);
+
+            yield return null; // Espera al siguiente frame
+        }
+    }
+
+    private IEnumerator Fase3()
+    {
+        // Fase 3: Ajuste final de la rotación
+        while (!EsRotacionCero(aroExterno.transform.localEulerAngles) || !EsRotacionCero(aroInterno.transform.localEulerAngles))
+        {
+            // Ajusta la rotación lentamente hacia (0, 0, 0)
+            if (!EsRotacionCero(aroExterno.transform.localEulerAngles))
+            {
+                aroExterno.transform.localEulerAngles = Vector3.MoveTowards(
+                    aroExterno.transform.localEulerAngles,
+                    Vector3.zero,
+                    aceleracion * Time.deltaTime
+                );
+            }
+
+            if (!EsRotacionCero(aroInterno.transform.localEulerAngles))
+            {
+                aroInterno.transform.localEulerAngles = Vector3.MoveTowards(
+                    aroInterno.transform.localEulerAngles,
+                    Vector3.zero,
+                    aceleracion * Time.deltaTime
+                );
+            }
+
+            yield return null; // Espera al siguiente frame
+        }
+    }
+
+
+    private bool EsRotacionCero(Vector3 rotacion)
+    {
+        // Consider the rotation as zero if each component is within a small threshold
+        return Mathf.Abs(rotacion.x) < 0.01f &&
+               Mathf.Abs(rotacion.y) < 0.01f &&
+               Mathf.Abs(rotacion.z) < 0.01f;
     }
 }
