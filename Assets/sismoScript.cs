@@ -31,6 +31,15 @@ public class sismoScript : MonoBehaviour
     public TeleportationAnchor plataformaTP; // TeleportationAnchor para el asiento
     public TeleportationAnchor sueloTP; // TeleportationAnchor para el suelo
 
+    // Nuevas variables GameObject
+    public GameObject puertaGO; // Referencia a la puerta
+    public GameObject escalonGO; // Referencia al escalón
+    public GameObject escalonesGO; // Referencia a los escalones
+
+    // Nuevos botones para abrir y cerrar
+    public Button abrirBtn; // Botón para abrir
+    public Button cerrarBtn; // Botón para cerrar
+
     void Start()
     {
         // Suscribirse a los eventos de los botones de movimiento
@@ -70,6 +79,18 @@ public class sismoScript : MonoBehaviour
         {
             salidaBtn.onClick.AddListener(OnSalidaButtonClicked);
         }
+        // Suscribirse a los eventos de los botones abrir y cerrar
+        if (abrirBtn != null)
+        {
+            abrirBtn.onClick.AddListener(Abrir);
+        }
+
+        if (cerrarBtn != null)
+        {
+            cerrarBtn.onClick.AddListener(Cerrar);
+        }
+        // Mover la puerta hacia abajo al iniciar
+        StartCoroutine(MoverPuertaHaciaAbajo());
     }
 
     // Método para iniciar el movimiento de lado a lado
@@ -115,7 +136,7 @@ public class sismoScript : MonoBehaviour
         while (true)
         {
             float offset = Mathf.Sin(elapsedTime * speed) * range;
-            plataforma.transform.localPosition = startPosition + new Vector3(offset, 0f, 0f);
+            plataforma.transform.localPosition = startPosition + 0.01f * new Vector3(offset, 0f, 0f);
             elapsedTime += Time.deltaTime;
             yield return null;
         }
@@ -130,7 +151,7 @@ public class sismoScript : MonoBehaviour
         while (true)
         {
             float offset = Mathf.Sin(elapsedTime * speed) * range;
-            plataforma.transform.localPosition = startPosition + new Vector3(0f, 0f, offset);
+            plataforma.transform.localPosition = startPosition + 0.01f * new Vector3(0f, 0f, offset);
             elapsedTime += Time.deltaTime;
             yield return null;
         }
@@ -145,7 +166,7 @@ public class sismoScript : MonoBehaviour
         while (true)
         {
             float offset = Mathf.Sin(elapsedTime * speed) * range;
-            plataforma.transform.localPosition = startPosition + new Vector3(0f, offset, 0f);
+            plataforma.transform.localPosition = startPosition + 0.01f * new Vector3(0f, offset, 0f);
             elapsedTime += Time.deltaTime;
             yield return null;
         }
@@ -268,5 +289,74 @@ public class sismoScript : MonoBehaviour
         {
             salidaBtn.onClick.RemoveListener(OnSalidaButtonClicked);
         }
+    }
+    // Función para abrir (animar la puerta hacia abajo y los escalones hacia arriba)
+    public void Abrir()
+    {
+        StartCoroutine(AnimarPuertaEscalones(Vector3.down, Vector3.up));
+    }
+
+    // Función para cerrar (animar la puerta hacia arriba y los escalones hacia abajo)
+    public void Cerrar()
+    {
+        StartCoroutine(AnimarPuertaEscalones(Vector3.up, Vector3.down));
+    }
+
+    // Corrutina para animar la puerta y los escalones
+    private IEnumerator AnimarPuertaEscalones(Vector3 puertaMovimiento, Vector3 escalonesMovimiento)
+    {
+        float duracion = 1f; // Duración de la animación en segundos
+        float tiempoTranscurrido = 0f;
+
+        // Posiciones iniciales
+        Vector3 puertaPosInicial = puertaGO.transform.localPosition;
+        Vector3 escalonPosInicial = escalonGO.transform.localPosition;
+        Vector3 escalonesPosInicial = escalonesGO.transform.localPosition;
+
+        // Posiciones finales
+        Vector3 puertaPosFinal = puertaPosInicial + puertaMovimiento;
+        Vector3 escalonPosFinal = escalonPosInicial + escalonesMovimiento;
+        Vector3 escalonesPosFinal = escalonesPosInicial + escalonesMovimiento;
+
+        while (tiempoTranscurrido < duracion)
+        {
+            float t = tiempoTranscurrido / duracion;
+
+            // Interpolación lineal para mover los objetos
+            puertaGO.transform.localPosition = Vector3.Lerp(puertaPosInicial, puertaPosFinal, t);
+            escalonGO.transform.localPosition = Vector3.Lerp(escalonPosInicial, escalonPosFinal, t);
+            escalonesGO.transform.localPosition = Vector3.Lerp(escalonesPosInicial, escalonesPosFinal, t);
+
+            tiempoTranscurrido += Time.deltaTime;
+            yield return null;
+        }
+
+        // Asegurarse de que los objetos lleguen exactamente a su posición final
+        puertaGO.transform.localPosition = puertaPosFinal;
+        escalonGO.transform.localPosition = escalonPosFinal;
+        escalonesGO.transform.localPosition = escalonesPosFinal;
+    }
+    private IEnumerator MoverPuertaHaciaAbajo()
+    {
+        float duracion = 1f; // Duración de la animación en segundos
+        float tiempoTranscurrido = 0f;
+
+        // Posición inicial y final de la puerta
+        Vector3 puertaPosInicial = puertaGO.transform.localPosition;
+        Vector3 puertaPosFinal = puertaPosInicial + Vector3.down;
+
+        while (tiempoTranscurrido < duracion)
+        {
+            float t = tiempoTranscurrido / duracion;
+
+            // Interpolación lineal para mover la puerta
+            puertaGO.transform.localPosition = Vector3.Lerp(puertaPosInicial, puertaPosFinal, t);
+
+            tiempoTranscurrido += Time.deltaTime;
+            yield return null;
+        }
+
+        // Asegurarse de que la puerta llegue exactamente a su posición final
+        puertaGO.transform.localPosition = puertaPosFinal;
     }
 }
