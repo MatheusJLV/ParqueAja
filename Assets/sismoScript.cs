@@ -9,6 +9,8 @@ public class sismoScript : MonoBehaviour
 
     public float speed = 2f; // Velocidad del movimiento
     public float range = 2f; // Rango del movimiento
+    public float duracion = 5f; // Duración en segundos
+    public float multiplier = 0.01f; // Duración en segundos
 
     private Coroutine currentMovement; // Corrutina actual en ejecución
 
@@ -20,6 +22,7 @@ public class sismoScript : MonoBehaviour
     // Sliders para controlar velocidad y rango
     public Slider velocidadSld; // Slider para controlar la velocidad
     public Slider rangoSld; // Slider para controlar el rango
+    public Slider duracionSd; // Slider para controlar la duracion
 
     public GameObject jugadorRig; // GameObject que representa al jugador
 
@@ -67,6 +70,10 @@ public class sismoScript : MonoBehaviour
         if (rangoSld != null)
         {
             rangoSld.onValueChanged.AddListener(OnRangoSliderChanged);
+        }
+        if (duracionSd != null)
+        {
+            duracionSd.onValueChanged.AddListener(OnDuracionSliderChanged);
         }
 
         // Suscribirse a los eventos de los botones de teletransportación
@@ -133,13 +140,16 @@ public class sismoScript : MonoBehaviour
         Vector3 startPosition = plataforma.transform.localPosition;
         float elapsedTime = 0f;
 
-        while (true)
+        while (elapsedTime < duracion)
         {
             float offset = Mathf.Sin(elapsedTime * speed) * range;
-            plataforma.transform.localPosition = startPosition + 0.01f * new Vector3(offset, 0f, 0f);
+            plataforma.transform.localPosition = startPosition + multiplier * new Vector3(offset, 0f, 0f);
             elapsedTime += Time.deltaTime;
             yield return null;
         }
+
+        //plataforma.transform.localPosition = startPosition; // Regresar a la posición inicial
+        ReturnToOrigin();
     }
 
     // Corrutina para mover de adelante hacia atrás
@@ -148,13 +158,16 @@ public class sismoScript : MonoBehaviour
         Vector3 startPosition = plataforma.transform.localPosition;
         float elapsedTime = 0f;
 
-        while (true)
+        while (elapsedTime < duracion)
         {
             float offset = Mathf.Sin(elapsedTime * speed) * range;
-            plataforma.transform.localPosition = startPosition + 0.01f * new Vector3(0f, 0f, offset);
+            plataforma.transform.localPosition = startPosition + multiplier * new Vector3(0f, 0f, offset);
             elapsedTime += Time.deltaTime;
             yield return null;
         }
+
+        //plataforma.transform.localPosition = startPosition; // Regresar a la posición inicial
+        ReturnToOrigin();
     }
 
     // Corrutina para mover de arriba hacia abajo
@@ -163,13 +176,16 @@ public class sismoScript : MonoBehaviour
         Vector3 startPosition = plataforma.transform.localPosition;
         float elapsedTime = 0f;
 
-        while (true)
+        while (elapsedTime < duracion)
         {
-            float offset = Mathf.Sin(elapsedTime * speed) * range;
-            plataforma.transform.localPosition = startPosition + 0.01f * new Vector3(0f, offset, 0f);
+            float offset = Mathf.Abs(Mathf.Sin(elapsedTime * speed)) * range;
+            plataforma.transform.localPosition = startPosition + multiplier * new Vector3(0f, offset, 0f);
             elapsedTime += Time.deltaTime;
             yield return null;
         }
+
+        //plataforma.transform.localPosition = startPosition; // Regresar a la posición inicial
+        ReturnToOrigin();
     }
 
     // Corrutina para regresar al origen local (0, 0, 0)
@@ -202,6 +218,20 @@ public class sismoScript : MonoBehaviour
     {
         range = value;
         Debug.Log($"Rango actualizado a: {range}");
+        if (value>2)
+        {
+            multiplier= 1f;
+        }
+        else
+        {
+            multiplier= 0.01f;
+        }
+    }
+
+    private void OnDuracionSliderChanged(float value)
+    {
+        duracion = value;
+        Debug.Log($"Duración actualizada a: {duracion}");
     }
 
     private void OnEntradaButtonClicked()
@@ -293,13 +323,13 @@ public class sismoScript : MonoBehaviour
     // Función para abrir (animar la puerta hacia abajo y los escalones hacia arriba)
     public void Abrir()
     {
-        StartCoroutine(AnimarPuertaEscalones(Vector3.down, Vector3.up));
+        StartCoroutine(AnimarPuertaEscalones(1.5f*Vector3.back, Vector3.forward));
     }
 
     // Función para cerrar (animar la puerta hacia arriba y los escalones hacia abajo)
     public void Cerrar()
     {
-        StartCoroutine(AnimarPuertaEscalones(Vector3.up, Vector3.down));
+        StartCoroutine(AnimarPuertaEscalones(1.5f * Vector3.forward, Vector3.back));
     }
 
     // Corrutina para animar la puerta y los escalones
@@ -343,7 +373,7 @@ public class sismoScript : MonoBehaviour
 
         // Posición inicial y final de la puerta
         Vector3 puertaPosInicial = puertaGO.transform.localPosition;
-        Vector3 puertaPosFinal = puertaPosInicial + Vector3.down;
+        Vector3 puertaPosFinal = puertaPosInicial + 1.5f * Vector3.back;
 
         while (tiempoTranscurrido < duracion)
         {
