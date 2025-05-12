@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
@@ -7,13 +8,7 @@ public class DebugRuler : MonoBehaviour
     private TMP_Text debugText; // Reference to the TextMeshPro Text component
 
     [SerializeField]
-    private GameObject object1; // Reference to the first game object
-
-    [SerializeField]
-    private GameObject object2; // Reference to the second game object
-
-    [SerializeField]
-    private GameObject object3; // Reference to the third game object
+    private List<GameObject> objects; // List of game objects
 
     // Update is called once per frame
     void Update()
@@ -30,19 +25,15 @@ public class DebugRuler : MonoBehaviour
     {
         string positions = "";
 
-        if (object1 != null)
+        if (objects != null && objects.Count > 0)
         {
-            positions += $"Object 1 Position: {object1.transform.position}\n";
-        }
-
-        if (object2 != null)
-        {
-            positions += $"Object 2 Position: {object2.transform.position}\n";
-        }
-
-        if (object3 != null)
-        {
-            positions += $"Object 3 Position: {object3.transform.position}\n";
+            for (int i = 0; i < objects.Count; i++)
+            {
+                if (objects[i] != null)
+                {
+                    positions += $"Object {i + 1} Position: {objects[i].transform.position}\n";
+                }
+            }
         }
 
         return positions;
