@@ -39,19 +39,25 @@ This project is **owned by ESPOL (Escuela Superior Politécnica del Litoral)**. 
 - **Deriot Santiago Zambrano Coronel**  
 - **Maria Dolores Mendoza Solorzano**  
 
+### **Special thanks to contributors**  
+- **Lenin Josue Andrade Apolo ** 
+- **Denisse Stephanie Ocana Penafiel** 
+- **Audio Visual Production: Ronny Anthony Rosado Santana** 
+- **Graphic designer: Ronny Anthony Rosado Santana** 
+
 ## **Acknowledgments**  
 Special thanks to **ESPOL** and the **Parque de la Ciencia ¡Ajá!** team for making this project possible.  
 
 ## **Connect**  
 🔗 Follow **Matheus Javier López Vélez**:  
-- [GitHub](#)  
+- [GitHub](https://github.com/MatheusJLV)  
 - [Twitter](#)  
-- [LinkedIn](#)  
+- [LinkedIn](https://www.linkedin.com/in/matheusjlv/)  
 
 ## Disclaimer  
 This project is in early development. Some external assets, including but not limited to audio files, are temporarily used as placeholders for testing purposes. These assets are located in the `Assets/Music` directory and will be replaced before any public release.  
 
 No copyright infringement is intended. If you are the rightful owner of any asset and wish for its removal, please contact the development team.  
 
-Unity version 6.0.38f1
+Unity version 6.0.47f1
 --- 
