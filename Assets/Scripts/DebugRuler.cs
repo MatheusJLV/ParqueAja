@@ -10,13 +10,17 @@ public class DebugRuler : MonoBehaviour
     [SerializeField]
     private List<GameObject> objects; // List of game objects
 
+    [SerializeField]
+    private AsientoRotatorio asientoRotatorio; // Referencia al AsientoRotatorio
+
     // Update is called once per frame
     void Update()
     {
         if (debugText != null)
         {
             string positions = GetPositions();
-            debugText.text = positions;
+            string pelotaInfo = GetPelotaInfo();
+            debugText.text = positions + pelotaInfo;
         }
     }
 
@@ -37,5 +41,18 @@ public class DebugRuler : MonoBehaviour
         }
 
         return positions;
+    }
+
+    // Método para mostrar el estado de pelotaNeeded y pelotaWanted
+    private string GetPelotaInfo()
+    {
+        if (asientoRotatorio != null)
+        {
+            return $"pelotaNeeded: {asientoRotatorio.pelotaNeeded}\npelotaWanted: {asientoRotatorio.pelotaWanted}\n";
+        }
+        else
+        {
+            return "AsientoRotatorio no asignado.\n";
+        }
     }
 }
