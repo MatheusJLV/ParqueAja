@@ -18,9 +18,11 @@ public class DebugRuler : MonoBehaviour
     {
         if (debugText != null)
         {
-            string positions = GetPositions();
-            string pelotaInfo = GetPelotaInfo();
-            debugText.text = positions + pelotaInfo;
+            string positions = GetPositions2();
+
+
+            //string pelotaInfo = GetPelotaInfo();
+            debugText.text = positions;
         }
     }
 
@@ -42,6 +44,34 @@ public class DebugRuler : MonoBehaviour
 
         return positions;
     }
+
+    private string GetPositions2()
+    {
+        string positions = "";
+
+        if (objects != null && objects.Count > 0)
+        {
+            for (int i = 0; i < objects.Count; i++)
+            {
+                GameObject parent = objects[i];
+                if (parent != null)
+                {
+                    int childCount = parent.transform.childCount;
+                    for (int j = 0; j < childCount; j++)
+                    {
+                        Transform child = parent.transform.GetChild(j);
+                        if (child != null)
+                        {
+                            positions += $"Object {i + 1} Child {j + 1} Position: {child.position}  Rotation: {child.rotation.eulerAngles}\n";
+                        }
+                    }
+                }
+            }
+        }
+
+        return positions;
+    }
+
 
     // Método para mostrar el estado de pelotaNeeded y pelotaWanted
     private string GetPelotaInfo()
