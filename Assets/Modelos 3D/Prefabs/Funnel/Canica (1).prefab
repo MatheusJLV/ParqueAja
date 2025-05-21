@@ -68,7 +68,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: f24fac3d98eb82040a3b64587a22f3b4, type: 2}
+  - {fileID: 2100000, guid: 88066a01086dfe34396c61502fb23ed5, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -272,7 +272,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82cc484026cca4d4db896b15c3cc85df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  funnelCenter: {fileID: 0}
-  radialBoost: 0.8
-  maxEffectRadius: 3
-  maxHeight: 1
+  isPlayer: 0

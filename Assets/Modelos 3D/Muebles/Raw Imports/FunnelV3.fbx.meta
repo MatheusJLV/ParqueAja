@@ -3,7 +3,17 @@ guid: 0343db3ea70efe6488e692143afd922e
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Plastico Polish
+    second: {fileID: 2100000, guid: e6c9e8b3119b3d04898a9f9001e5792b, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Plastico rampa
+    second: {fileID: -7367868129480986338, guid: ce52ff76721a75042bad0fe3c972bcd1, type: 3}
   materials:
     materialImportMode: 2
     materialName: 0
