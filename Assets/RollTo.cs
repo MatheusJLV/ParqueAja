@@ -2,6 +2,8 @@ using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 
+// este script ya no se va a usar, queda ahi para borrar luego si por si las dudas
+
 public class RollTo : MonoBehaviour
 {
     public GameObject salida;
@@ -9,8 +11,10 @@ public class RollTo : MonoBehaviour
     public float speed = 5f;
 
     private Rigidbody rb;
-    private bool wasKinematic;
-    private bool wasUseGravity;
+    //private bool wasKinematic;
+    //private bool wasUseGravity;
+
+    public float stopDistance = 0.1f;
 
     private float delayTimer;
 
@@ -23,19 +27,37 @@ public class RollTo : MonoBehaviour
         }
     }
 
-    void OnEnable()
+    void FixedUpdate()
     {
-        if (rb != null)
+
+        if (meta == null) return;
+
+        Vector3 newPosition = Vector3.MoveTowards(
+            rb.position,
+            meta.transform.position,
+            speed * Time.fixedDeltaTime
+        );
+        rb.MovePosition(newPosition);
+
+        // Check distance after moving
+        float distance = Vector3.Distance(rb.position, meta.transform.position);
+        if (distance < stopDistance)
         {
-            wasKinematic = rb.isKinematic;
-            wasUseGravity = rb.useGravity;
-            rb.isKinematic = true;
-            rb.useGravity = false;
+            // Final correction to align transform and Rigidbody
+            transform.position = meta.transform.position;
+            rb.MovePosition(meta.transform.position);
+
+            rb.isKinematic = false;
+            rb.useGravity = true;
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            rb.WakeUp();
+
+            this.enabled = false;
         }
-        delayTimer = 0.2f;
     }
 
-    void OnDisable()
+    /*void OnDisable()
     {
         if (salida != null)
         {
@@ -61,6 +83,9 @@ public class RollTo : MonoBehaviour
             rb.useGravity = wasUseGravity;
         }
     }
+
+
+
 
     void Update()
     {
@@ -107,5 +132,5 @@ public class RollTo : MonoBehaviour
             // Desactivar este componente
             this.enabled = false;
         }
-    }
+    }*/
 }

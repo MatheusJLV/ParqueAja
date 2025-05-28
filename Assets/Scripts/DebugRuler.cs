@@ -10,15 +10,15 @@ public class DebugRuler : MonoBehaviour
     [SerializeField]
     private List<GameObject> objects; // List of game objects
 
-    [SerializeField]
-    private AsientoRotatorio asientoRotatorio; // Referencia al AsientoRotatorio
+    //[SerializeField]
+    //private AsientoRotatorio asientoRotatorio; // Referencia al AsientoRotatorio
 
     // Update is called once per frame
     void Update()
     {
         if (debugText != null)
         {
-            string positions = GetPositions2();
+            string positions = GetRigidBodyStats();
 
 
             //string pelotaInfo = GetPelotaInfo();
@@ -71,10 +71,45 @@ public class DebugRuler : MonoBehaviour
 
         return positions;
     }
+    private string GetRigidBodyStats()
+    {
+        string stats = "";
 
+        if (objects != null && objects.Count > 0)
+        {
+            for (int i = 0; i < objects.Count; i++)
+            {
+                GameObject obj = objects[i];
+                if (obj != null)
+                {
+                    Rigidbody rb = obj.GetComponent<Rigidbody>();
+                    if (rb != null)
+                    {
+                        stats += $"Object {i + 1} ({obj.name}) Rigidbody:\n";
+                        stats += $"  Mass: {rb.mass}\n";
+                        stats += $"  Linear Damping: {rb.linearDamping}\n";
+                        stats += $"  Angular Damping: {rb.angularDamping}\n";
+                        stats += $"  Use Gravity: {rb.useGravity}\n";
+                        stats += $"  Is Kinematic: {rb.isKinematic}\n";
+                        stats += $"  Interpolation: {rb.interpolation}\n";
+                        stats += $"  Collision Detection: {rb.collisionDetectionMode}\n";
+                        stats += $"  Constraints: {rb.constraints}\n";
+                        stats += $"  Velocity: {rb.linearVelocity}\n";
+                        stats += $"  Angular Velocity: {rb.angularVelocity}\n";
+                    }
+                    else
+                    {
+                        stats += $"Object {i + 1} ({obj.name}): No Rigidbody found.\n";
+                    }
+                }
+            }
+        }
+
+        return stats;
+    }
 
     // Método para mostrar el estado de pelotaNeeded y pelotaWanted
-    private string GetPelotaInfo()
+    /*private string GetPelotaInfo()
     {
         if (asientoRotatorio != null)
         {
@@ -84,5 +119,5 @@ public class DebugRuler : MonoBehaviour
         {
             return "AsientoRotatorio no asignado.\n";
         }
-    }
+    }*/
 }
