@@ -34,9 +34,21 @@ public class GiroscopioScript : MonoBehaviour
     public int duracion = 10; // Duración predeterminada de la animación
     public Button iniciarGiroscopioBtn; // Botón para iniciar el giroscopio
 
-
+    private bool canGirar = false;
 
     public bool manualContoller = false; // Variable para controlar el uso manual del controlador
+
+    void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("Player")) // Asegúrate de usar el tag correcto
+            canGirar = true;
+    }
+
+    void OnTriggerExit(Collider other)
+    {
+        if (other.CompareTag("Player"))
+            canGirar = false;
+    }
 
     void Start()
     {
@@ -168,6 +180,8 @@ public class GiroscopioScript : MonoBehaviour
     }
     private void controlacionManual()
     {
+        if (!canGirar) return;
+
         // Obtén los dispositivos de las manos derecha e izquierda
         var rightHandDevices = new List<InputDevice>();
         var leftHandDevices = new List<InputDevice>();
