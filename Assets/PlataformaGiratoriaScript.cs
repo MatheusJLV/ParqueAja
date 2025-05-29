@@ -36,6 +36,7 @@ public class PlataformaGiratoriaScript : MonoBehaviour
     public TeleportationAnchor plataformaTP; // TeleportationAnchor para el asiento
     public TeleportationAnchor sueloTP; // TeleportationAnchor para el suelo
 
+    private bool canGirar = false;
     void Start()
     {
         // Suscribirse a los eventos de los sliders
@@ -100,8 +101,22 @@ public class PlataformaGiratoriaScript : MonoBehaviour
         }
     }
 
+    void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("Player")) // Asegúrate de usar el tag correcto
+            canGirar = true;
+    }
+
+    void OnTriggerExit(Collider other)
+    {
+        if (other.CompareTag("Player"))
+            canGirar = false;
+    }
+
     private void ControlManual()
     {
+
+        if (!canGirar) return;
         // Obtener los dispositivos de la mano derecha
         var rightHandDevices = new List<InputDevice>();
         InputDevices.GetDevicesAtXRNode(XRNode.RightHand, rightHandDevices);

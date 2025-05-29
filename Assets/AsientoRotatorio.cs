@@ -40,6 +40,8 @@ public class AsientoRotatorio : MonoBehaviour
     private float rotationSpeed = 0f; // Velocidad actual de rotación
     private Coroutine rotacionCoroutine = null;
 
+    private bool canGirar = false;
+
     void Start()
     {
         if (iniciarBtn != null)
@@ -246,10 +248,20 @@ public class AsientoRotatorio : MonoBehaviour
             InstanciarPelota();
             //pelotaNeeded = false;
         }
+        if (other.CompareTag("Player"))
+            canGirar = false;
     }
+
+    void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("Player")) // Asegúrate de usar el tag correcto
+            canGirar = true;
+    }
+
 
     private void ControlRotacion()
     {
+        if (!canGirar) return;
         //Debug.Log("Método ControlRotacion() llamado.");
         // Obtener los dispositivos de la mano derecha
         var rightHandDevices = new List<InputDevice>();
