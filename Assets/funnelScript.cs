@@ -62,7 +62,6 @@ public class funnelScript : MonoBehaviour
     {
         if (!puedeIniciar)
         {
-            Debug.LogWarning("Iniciar está en cooldown o ya se está ejecutando.");
             return;
         }
         StartCoroutine(IniciarCoroutine());
@@ -95,7 +94,6 @@ public class funnelScript : MonoBehaviour
             // Apply a tint color (with transparency!)
             block.SetColor("_BaseColor", new Color(Random.value, Random.value, Random.value, 0.5f));
             rend.SetPropertyBlock(block);
-            Debug.Log("Pelota 1 instanciada como hija de 'pelotas1'.");
         }
         else
         {
@@ -119,7 +117,6 @@ public class funnelScript : MonoBehaviour
             // Apply a tint color (with transparency!)
             block.SetColor("_BaseColor", new Color(Random.value, Random.value, Random.value, 0.5f));
             rend2.SetPropertyBlock(block);
-            Debug.Log("Pelota 2 instanciada como hija de 'pelotas2'.");
         }
         else
         {
@@ -170,7 +167,6 @@ public class funnelScript : MonoBehaviour
         if (asientoTP != null)
         {
             asientoTP.RequestTeleport();
-            Debug.Log("Teletransportado al asiento.");
         }
         else
         {
@@ -195,7 +191,6 @@ public class funnelScript : MonoBehaviour
             // Ajustar la escala local para que la global sea 1/100 de la original
             SetWorldScale(jugadorRig.transform, jugadorRigOriginalWorldScale / 100f);
 
-            Debug.Log("Jugador ahora es hijo del asiento y su escala global ha sido reducida por 100.");
         }
         else
         {
@@ -210,7 +205,6 @@ public class funnelScript : MonoBehaviour
         if (sueloTP != null)
         {
             sueloTP.RequestTeleport();
-            Debug.Log("Teletransportado al suelo.");
         }
         else
         {
@@ -234,7 +228,6 @@ public class funnelScript : MonoBehaviour
             // Restaurar la escala global original
             SetWorldScale(jugadorRig.transform, jugadorRigOriginalWorldScale);
 
-            Debug.Log("Jugador liberado del asiento y su escala global restaurada.");
         }
         else
         {
@@ -257,12 +250,10 @@ public class funnelScript : MonoBehaviour
                 Salir();
             }
             Destroy(objeto, 1f);
-            Debug.Log("Canica detectada en metaZone. Se destruirá en 1 segundo.");
         }
 
         if (objeto.CompareTag("MainCamera"))
         {
-            Debug.Log("MainCamera detectada en metaZone. Ejecutando Salir().");
             Salir();
         }
     }
@@ -283,7 +274,6 @@ public class funnelScript : MonoBehaviour
             storedCameraNearClip = xrCamera.nearClipPlane;
             storedCameraFarClip = xrCamera.farClipPlane;
         }
-        Debug.Log("Estado guardado.");
     }
 
     public void CargarEstado()
@@ -303,7 +293,6 @@ public class funnelScript : MonoBehaviour
             xrCamera.nearClipPlane = storedCameraNearClip;
             xrCamera.farClipPlane = storedCameraFarClip;
         }
-        Debug.Log("Estado cargado.");
     }
 
     public void ModificarEstado()
@@ -329,7 +318,6 @@ public class funnelScript : MonoBehaviour
             xrCamera.farClipPlane = 100f;
         }
 
-        Debug.Log("Estado modificado en los objetos: YOffset, Height y NearClip a 0.1; FarClip a 1.");
     }
 
     public void IngresarEIniciar()
@@ -341,7 +329,6 @@ public class funnelScript : MonoBehaviour
     {
         if (ejecutandoIngresarEIniciar || playerDentro || !puedeIniciar)
         {
-            Debug.LogWarning("IngresarEIniciarCoroutine already running or blocked.");
             yield break;
         }
 
@@ -383,11 +370,9 @@ public class funnelScript : MonoBehaviour
             if (anchor != null)
             {
                 asientoTP = anchor;
-                Debug.Log("TeleportationAnchor assigned.");
             }
             else
             {
-                Debug.LogWarning("TeleportationAnchor not found.");
             }
 
             // Optional: Set color
@@ -400,11 +385,9 @@ public class funnelScript : MonoBehaviour
                 rend2.SetPropertyBlock(block);
             }
 
-            Debug.Log("Player-ball instantiated.");
         }
         else
         {
-            Debug.LogWarning("pelotaPlayerPrefab or pelotas2 missing.");
         }
 
         // Small pause to allow prefab instantiation to finalize
@@ -414,7 +397,6 @@ public class funnelScript : MonoBehaviour
         if (asientoTP != null)
         {
             asientoTP.RequestTeleport();
-            Debug.Log("Teleport requested.");
         }
         else
         {
@@ -438,7 +420,6 @@ public class funnelScript : MonoBehaviour
 
             SetWorldScale(jugadorRig.transform, jugadorRigOriginalWorldScale / 100f);
 
-            Debug.Log("Player reparented and scaled.");
         }
         else
         {

@@ -85,20 +85,17 @@ public class GiroscopioScript : MonoBehaviour
     private void OnVelocidadSliderChanged(float value)
     {
         velocidadMaxima = value;
-        Debug.Log($"Velocidad máxima actualizada a: {velocidadMaxima}");
     }
 
     // Método para manejar el cambio de valor del slider de aceleración
     private void OnAceleracionSliderChanged(float value)
     {
         aceleracion = value;
-        Debug.Log($"Aceleración actualizada a: {aceleracion}");
     }
 
     private void OnIniciarGiroscopioButtonClicked()
     {
         iniciarGiroscopio(duracion);
-        Debug.Log($"Giroscopio iniciado con duración: {duracion} segundos.");
     }
 
     void OnDestroy()
@@ -135,7 +132,6 @@ public class GiroscopioScript : MonoBehaviour
         if (asiento != null)
         {
             asiento.RequestTeleport();
-            Debug.Log("Teletransportado al asiento.");
         }
         else
         {
@@ -146,7 +142,6 @@ public class GiroscopioScript : MonoBehaviour
         if (asientoGO != null && jugadorRig != null)
         {
             jugadorRig.transform.SetParent(asientoGO.transform);
-            Debug.Log("Jugador ahora es hijo de asientoGO.");
         }
         else
         {
@@ -160,7 +155,6 @@ public class GiroscopioScript : MonoBehaviour
         if (suelo != null)
         {
             suelo.RequestTeleport();
-            Debug.Log("Teletransportado al suelo.");
         }
         else
         {
@@ -171,7 +165,6 @@ public class GiroscopioScript : MonoBehaviour
         if (jugadorRig != null)
         {
             jugadorRig.transform.SetParent(null);
-            Debug.Log("Jugador liberado de cualquier padre.");
         }
         else
         {
@@ -273,7 +266,6 @@ public class GiroscopioScript : MonoBehaviour
         yield return StartCoroutine(Fase2());
         yield return StartCoroutine(Fase3());
 
-        Debug.Log("Animación del giroscopio completada.");
     }
     
     private IEnumerator Fase1(int duracion)

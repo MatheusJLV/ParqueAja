@@ -1,17 +1,20 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 using UnityEngine.XR.Interaction.Toolkit.Locomotion;
 using UnityEngine.XR.Interaction.Toolkit.Locomotion.Climbing;
+using UnityEngine.XR.Interaction.Toolkit.Locomotion.Movement;
 
 namespace Unity.XR.Custom
 {
     [AddComponentMenu("XR/Locomotion/Custom Climb Provider", 11)]
     public class CustomClimbProvider : ClimbProvider
     {
+        public CharacterController characterController;
         private readonly List<IXRSelectInteractor> grabbingInteractors = new();
         private readonly List<ClimbInteractable> grabbedClimbables = new();
 
@@ -29,6 +32,7 @@ namespace Unity.XR.Custom
 
         public void StartClimbGrab(ClimbInteractable interactable, IXRSelectInteractor interactor)
         {
+            Debug.Log("StartClimbGrab");
             if (interactable is ClimbInteractableWithMultiplier withMultiplier)
                 currentClimbMultiplier = withMultiplier.climbForceMultiplier;
             else
@@ -46,6 +50,7 @@ namespace Unity.XR.Custom
 
         public void FinishClimbGrab(IXRSelectInteractor interactor)
         {
+            Debug.Log("FinishClimbGrab");
             var index = grabbingInteractors.IndexOf(interactor);
             if (index < 0) return;
 
@@ -53,7 +58,10 @@ namespace Unity.XR.Custom
             grabbedClimbables.RemoveAt(index);
 
             if (grabbingInteractors.Count == 0)
+            {
+
                 TryEndLocomotion();
+            }            
             else
             {
                 var lastInteractable = grabbedClimbables[^1];
@@ -70,11 +78,13 @@ namespace Unity.XR.Custom
 
         protected virtual void Update()
         {
+
             if (!isLocomotionActive)
                 return;
 
             if (grabbingInteractors.Count == 0)
             {
+
                 TryEndLocomotion();
                 return;
             }
@@ -87,6 +97,7 @@ namespace Unity.XR.Custom
 
             if (interactor == null || interactable == null)
             {
+
                 TryEndLocomotion();
                 return;
             }
@@ -96,6 +107,7 @@ namespace Unity.XR.Custom
 
         private void StepClimbMovement(ClimbInteractable interactable, IXRSelectInteractor interactor)
         {
+            Debug.Log(grabbingInteractors.Count);
             var settings = interactable.climbSettingsOverride?.Value ?? climbSettings?.Value;
             if (settings == null)
                 return;

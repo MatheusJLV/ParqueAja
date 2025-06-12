@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using TMPro;
+using Unity.VRTemplate;
 using UnityEngine;
 
 public class DebugRuler : MonoBehaviour
@@ -10,6 +11,9 @@ public class DebugRuler : MonoBehaviour
     [SerializeField]
     private List<GameObject> objects; // List of game objects
 
+    /*[SerializeField]
+    private XRKnob rueda;*/
+
     //[SerializeField]
     //private AsientoRotatorio asientoRotatorio; // Referencia al AsientoRotatorio
 
@@ -18,13 +22,20 @@ public class DebugRuler : MonoBehaviour
     {
         if (debugText != null)
         {
-            string positions = GetRigidBodyStats();
+            string salida = GetPositions();
 
 
             //string pelotaInfo = GetPelotaInfo();
-            debugText.text = positions;
+            debugText.text = salida;
         }
     }
+
+    /*private string getAngle()
+    {
+        string angle;
+        angle = "" + rueda.value;
+        return angle;
+    }*/
 
     // Method to get the positions of the game objects
     private string GetPositions()

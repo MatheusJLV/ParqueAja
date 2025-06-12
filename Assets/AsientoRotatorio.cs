@@ -74,25 +74,21 @@ public class AsientoRotatorio : MonoBehaviour
     private void OnVelocidadSliderChanged(float value)
     {
         velocidadMaxima = value;
-        Debug.Log("velocidadMaxima actualizada a: " + velocidadMaxima);
     }
 
     private void OnAceleracionSliderChanged(float value)
     {
         aceleracion = value;
-        Debug.Log("aceleracion actualizada a: " + aceleracion);
     }
 
     private void OnTiempoSliderChanged(float value)
     {
         tiempo = value;
-        Debug.Log("tiempo actualizado a: " + tiempo);
     }
 
     // Método para iniciar la rotación automática
     public void IniciarRotacion()
     {
-        Debug.Log("Método IniciarRotacion() llamado.");
         if (rotacionCoroutine != null)
         {
             StopCoroutine(rotacionCoroutine);
@@ -102,7 +98,6 @@ public class AsientoRotatorio : MonoBehaviour
 
     private IEnumerator RotacionAutomatica()
     {
-        Debug.Log("Rotación automática iniciada.");
         float tiempoTranscurrido = 0f;
         rotationSpeed = 0f;
 
@@ -169,7 +164,6 @@ public class AsientoRotatorio : MonoBehaviour
         // Ajuste final exacto
         mecanismo.transform.localRotation = rotacionInicial;
         rotationSpeed = 0f;
-        Debug.Log("Rotación automática completada y mecanismo regresado a la rotación inicial.");
     }
 
 
@@ -177,11 +171,9 @@ public class AsientoRotatorio : MonoBehaviour
     // Método para ingresar al asiento y teletransportar
     public void Ingresar()
     {
-        Debug.Log("Método Ingresar() llamado.");
         if (asientoTP != null)
         {
             asientoTP.RequestTeleport();
-            Debug.Log("Teletransportado al asiento.");
         }
         else
         {
@@ -191,7 +183,6 @@ public class AsientoRotatorio : MonoBehaviour
         if (asientoGO != null && jugadorRig != null)
         {
             jugadorRig.transform.SetParent(asientoGO.transform);
-            Debug.Log("Jugador ahora es hijo del asiento.");
         }
         else
         {
@@ -202,11 +193,9 @@ public class AsientoRotatorio : MonoBehaviour
     // Método para salir del asiento y teletransportar
     public void Salir()
     {
-        Debug.Log("Método Salir() llamado.");
         if (sueloTP != null)
         {
             sueloTP.RequestTeleport();
-            Debug.Log("Teletransportado al suelo.");
         }
         else
         {
@@ -216,7 +205,6 @@ public class AsientoRotatorio : MonoBehaviour
         if (jugadorRig != null)
         {
             jugadorRig.transform.SetParent(null);
-            Debug.Log("Jugador liberado del asiento.");
         }
         else
         {
@@ -240,11 +228,9 @@ public class AsientoRotatorio : MonoBehaviour
 
     void OnTriggerExit(Collider other)
     {
-        Debug.Log("Método OnTriggerExit() llamado.");
         if (pelotaActual != null && other.gameObject == pelotaActual)
         {
             pelotaNeeded = true;
-            Debug.Log("La pelota actual ha salido del área. pelotaNeeded = true");
             InstanciarPelota();
             //pelotaNeeded = false;
         }
@@ -295,18 +281,15 @@ public class AsientoRotatorio : MonoBehaviour
 
     public void InstanciarPelota()
     {
-        Debug.Log("Método InstanciarPelota() llamado.");
         if (pelotaNeeded && pelotaWanted && pelotaPrefab != null && posicionInstancia != null && pelotas != null)
         {
             pelotaNeeded = false; // Reiniciar la necesidad de pelota
-            Debug.Log("Pelota needed: "+ pelotaNeeded);
             GameObject nuevaPelota = Instantiate(
                 pelotaPrefab,
                 posicionInstancia.position,
                 posicionInstancia.rotation,
                 posicionInstancia.transform
             );
-            Debug.Log("Pelota instanciada y asignada como hija de 'pelotas'.");
             pelotaActual = nuevaPelota;
             // Suscribirse al evento select exited del XRGrabInteractable
             XRGrabInteractable grabInteractable = nuevaPelota.GetComponent<XRGrabInteractable>();
@@ -324,7 +307,6 @@ public class AsientoRotatorio : MonoBehaviour
 
     private void OnPelotaSelectExited(SelectExitEventArgs args)
     {
-        Debug.Log("Método OnPelotaSelectExited() llamado.");
         PelotaLanzada();
     }
 
@@ -358,7 +340,6 @@ public class AsientoRotatorio : MonoBehaviour
 
     public void PelotaLanzada()
     {
-        Debug.Log("Método PelotaLanzada() llamado.");
         if (pelotaActual != null && pelotas != null)
         {
             // Cambiar el parent de la pelota actual al contenedor de pelotas
