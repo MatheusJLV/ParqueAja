@@ -14,7 +14,6 @@ namespace Unity.XR.Custom
     [AddComponentMenu("XR/Locomotion/Custom Climb Provider", 11)]
     public class CustomClimbProvider : ClimbProvider
     {
-        public CharacterController characterController;
         private readonly List<IXRSelectInteractor> grabbingInteractors = new();
         private readonly List<ClimbInteractable> grabbedClimbables = new();
 
@@ -59,8 +58,8 @@ namespace Unity.XR.Custom
 
             if (grabbingInteractors.Count == 0)
             {
-
-                TryEndLocomotion();
+                base.FinishLocomotion();
+                //TryEndLocomotion();
             }            
             else
             {
@@ -84,8 +83,8 @@ namespace Unity.XR.Custom
 
             if (grabbingInteractors.Count == 0)
             {
-
-                TryEndLocomotion();
+                base.FinishLocomotion();
+                //TryEndLocomotion();
                 return;
             }
 
@@ -97,8 +96,8 @@ namespace Unity.XR.Custom
 
             if (interactor == null || interactable == null)
             {
-
-                TryEndLocomotion();
+                base.FinishLocomotion();
+                //TryEndLocomotion();
                 return;
             }
 
