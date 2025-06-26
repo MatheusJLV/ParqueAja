@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using TMPro;
 using Unity.VRTemplate;
 using UnityEngine;
+using UnityEngine.VFX;
 
 public class DebugRuler : MonoBehaviour
 {
@@ -10,6 +11,8 @@ public class DebugRuler : MonoBehaviour
 
     [SerializeField]
     private List<GameObject> objects; // List of game objects
+
+    public VisualEffect staticFieldVFX;
 
     /*[SerializeField]
     private XRKnob rueda;*/
@@ -22,12 +25,30 @@ public class DebugRuler : MonoBehaviour
     {
         if (debugText != null)
         {
-            string salida = GetPositions();
+            string salida = GetVFXProperties();
 
 
             //string pelotaInfo = GetPelotaInfo();
             debugText.text = salida;
         }
+    }
+
+    private string GetVFXProperties()
+    {
+        if (staticFieldVFX == null)
+            return "VisualEffect no asignado.\n";
+
+        bool intruder1 = staticFieldVFX.HasBool("Atractor1") ? staticFieldVFX.GetBool("Atractor1") : false;
+        bool intruder2 = staticFieldVFX.HasBool("Atractor2") ? staticFieldVFX.GetBool("Atractor2") : false;
+        Vector3 intruderTip = staticFieldVFX.HasVector3("IntruderPosition") ? staticFieldVFX.GetVector3("IntruderPosition") : Vector3.zero;
+        Vector3 intruderTip2 = staticFieldVFX.HasVector3("IntruderPosition2") ? staticFieldVFX.GetVector3("IntruderPosition2") : Vector3.zero;
+
+        string result = $"Atractor1: {intruder1}\n" +
+                        $"Atractor2: {intruder2}\n" +
+                        $"IntruderTip: {intruderTip}\n" +
+                        $"IntruderTip2: {intruderTip2}\n";
+
+        return result;
     }
 
     /*private string getAngle()
