@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.VFX;
 
@@ -5,52 +6,27 @@ public class VFXPointerCustom : MonoBehaviour
 {
     public VisualEffect staticFieldVFX;
     private Collider intruder1;
+    public GameObject arcoElectrico;
+    public List<GameObject> puntosRef = new List<GameObject>();
+
 
     void OnTriggerEnter(Collider other)
     {
         Debug.Log($"[VFXPointerCustom] OnTriggerEnter llamado con: {other.gameObject.name}");
 
-        // Etapa 1: Validación de tag
         if (!other.CompareTag("Conductor"))
         {
             Debug.Log($"[VFXPointerCustom] {other.gameObject.name} no tiene el tag 'Conductor'. Se ignora.");
             return;
         }
-        Debug.Log($"[VFXPointerCustom] {other.gameObject.name} tiene el tag 'Conductor'.");
 
-        // Etapa 2: Validación de duplicado
         if (intruder1 != null && other == intruder1)
         {
             Debug.Log($"[VFXPointerCustom] {other.gameObject.name} ya está asignado como intruder. Se ignora.");
             return;
         }
-        Debug.Log($"[VFXPointerCustom] {other.gameObject.name} no está asignado como intruder. Continuando.");
 
-        // Etapa 3: Asignación y activación de VFX
-        if (intruder1 == null)
-        {
-            Debug.Log($"[VFXPointerCustom] Asignando {other.gameObject.name} como intruder1.");
-            intruder1 = other;
-            staticFieldVFX.SetBool("Atractor1", true);
-            staticFieldVFX.SetVector3("IntruderPosition", intruder1.transform.position);
-            Debug.Log($"[VFXPointerCustom] VFX actualizado para {other.gameObject.name}.");
-
-            // Etapa 4: Intento de cargar el carrier
-            var carrier = intruder1.GetComponent<VFXCarrier>();
-            if (carrier != null)
-            {
-                carrier.Charge();
-                Debug.Log($"[VFXPointerCustom] Charge() llamado en {intruder1.gameObject.name}");
-            }
-            else
-            {
-                Debug.LogWarning($"[VFXPointerCustom] {intruder1.gameObject.name} no tiene componente VFXCarrier.");
-            }
-        }
-        else
-        {
-            Debug.Log($"[VFXPointerCustom] intruder1 ya está asignado, no se realiza ninguna acción.");
-        }
+        HandleIntruderEnter(other);
     }
 
     void OnTriggerExit(Collider other)
@@ -59,11 +35,69 @@ public class VFXPointerCustom : MonoBehaviour
 
         if (other == intruder1)
         {
-            staticFieldVFX.SetBool("Atractor1", false);
-            staticFieldVFX.SetVector3("IntruderPosition", Vector3.zero);
-            intruder1 = null;
+            HandleIntruderExit(other);
         }
     }
+
+    private void HandleIntruderEnter(Collider other)
+    {
+        Debug.Log($"[VFXPointerCustom] Asignando {other.gameObject.name} como intruder1.");
+        intruder1 = other;
+        staticFieldVFX.SetBool("Atractor1", true);
+        staticFieldVFX.SetVector3("IntruderPosition", intruder1.transform.position);
+        Debug.Log($"[VFXPointerCustom] VFX actualizado para {other.gameObject.name}.");
+
+        if (arcoElectrico != null)
+            arcoElectrico.SetActive(true);
+
+        var carrier = intruder1.GetComponent<VFXCarrier>();
+        if (carrier != null)
+        {
+            carrier.Charge();
+            Debug.Log($"[VFXPointerCustom] Charge() llamado en {intruder1.gameObject.name}");
+        }
+        else
+        {
+            Debug.LogWarning($"[VFXPointerCustom] {intruder1.gameObject.name} no tiene componente VFXCarrier.");
+        }
+    }
+
+    private void HandleIntruderExit(Collider other)
+    {
+        staticFieldVFX.SetBool("Atractor1", false);
+        staticFieldVFX.SetVector3("IntruderPosition", Vector3.zero);
+        intruder1 = null;
+
+        if (arcoElectrico != null)
+            arcoElectrico.SetActive(false);
+    }
+
+    void OnTriggerStay(Collider other)
+    {
+        if (other == intruder1)
+        {
+            HandleIntruderStay();
+        }
+    }
+
+    private void HandleIntruderStay()
+    {
+        // Asegura que hay suficientes puntos y que no son nulos
+        if (puntosRef.Count >= 4 &&
+            puntosRef[0] != null && puntosRef[1] != null &&
+            puntosRef[2] != null && puntosRef[3] != null)
+        {
+            Vector3 pos1 = puntosRef[0].transform.position;
+            Vector3 pos4 = puntosRef[3].transform.position;
+
+            // El segundo objeto (índice 1) está más cerca del primero (por ejemplo, 25% del camino)
+            puntosRef[1].transform.position = Vector3.Lerp(pos1, pos4, 0.25f);
+
+            // El tercero (índice 2) está más cerca del cuarto (por ejemplo, 75% del camino)
+            puntosRef[2].transform.position = Vector3.Lerp(pos1, pos4, 0.75f);
+        }
+    }
+
 
     void Update()
     {
