@@ -1,46 +1,37 @@
 using UnityEngine;
-using UnityEngine.XR.Interaction.Toolkit.Locomotion.Teleportation;
 using UnityEngine.UI;
+using UnityEngine.XR.Interaction.Toolkit;
 using System.Collections;
+using UnityEngine.XR.Interaction.Toolkit.Locomotion.Teleportation;
 
 public class CocinaSolarScript : MonoBehaviour
 {
-    public GameObject asientoGO; // Referencia al asiento (la pelota que aloja al jugador)
-    public GameObject jugadorRig; // XR Rig del jugador
-    public TeleportationAnchor asientoTP; // TeleportationAnchor para el asiento
-    public TeleportationAnchor sueloTP;   // TeleportationAnchor para el suelo
-    public GameObject pelotaPlayerPrefab; // Prefab de la pelota que aloja al jugador
-    public GameObject puntoInstanciaPelota; // Referencia vacía para la posición de la pelota
-
+    public GameObject asientoGO;
+    public GameObject jugadorRig;
+    public TeleportationAnchor asientoTP;
+    public TeleportationAnchor sueloTP;
+    public GameObject pelotaPlayerPrefab;
+    public GameObject puntoInstanciaPelota;
     public Button ingresarBtn;
     public Button salirBtn;
-
     public Slider duracionSD;
     public int duracion = 5;
+    public float range = 0.8f;
+    public GameObject foco;
 
     private Vector3 jugadorRigOriginalWorldScale;
     private bool playerDentro = false;
-
     private Coroutine temporizadorCoroutine;
-
-    public float range = 0.8f;
-
-    public GameObject foco; // Asigna el foco desde el editor
 
     void Start()
     {
-        if (ingresarBtn != null)
-            ingresarBtn.onClick.AddListener(Ingresar);
-
-        if (salirBtn != null)
-            salirBtn.onClick.AddListener(Salir);
-
+        if (ingresarBtn != null) ingresarBtn.onClick.AddListener(() => StartCoroutine(Ingresar()));
+        if (salirBtn != null) salirBtn.onClick.AddListener(Salir);
         if (duracionSD != null)
+        {
             duracionSD.onValueChanged.AddListener(ChangeDuracion);
-
-        // Inicializa el valor del slider si es necesario
-        if (duracionSD != null)
             duracionSD.value = duracion;
+        }
     }
 
     public void ChangeDuracion(float value)
@@ -48,19 +39,21 @@ public class CocinaSolarScript : MonoBehaviour
         duracion = Mathf.RoundToInt(value);
     }
 
-    public void Ingresar()
+    private IEnumerator Ingresar()
     {
-        if (playerDentro)
-            return;
+        if (playerDentro) yield break;
 
-        // Generar un offset aleatorio en cada eje dentro del rango especificado
+        // Generate random spawn offset
         Vector3 randomOffset = new Vector3(
             Random.Range(-range, range),
             Random.Range(-range, range),
             Random.Range(-range, range)
         );
 
-        // Instanciar la pelota si no existe
+        Rigidbody rb = null;
+        Collider col = null;
+
+        // Instantiate the ball
         if (asientoGO == null && pelotaPlayerPrefab != null && puntoInstanciaPelota != null)
         {
             asientoGO = Instantiate(
@@ -70,22 +63,34 @@ public class CocinaSolarScript : MonoBehaviour
                 transform
             );
 
-            // Asignar el foco si el script está presente
+            // Assign spotlight to internal script
             CanicaSolarScript canica = asientoGO.GetComponent<CanicaSolarScript>();
             if (canica != null)
                 canica.foco = foco;
 
-            // Buscar el TeleportationAnchor en la pelota
             TeleportationAnchor anchor = asientoGO.GetComponentInChildren<TeleportationAnchor>();
             if (anchor != null)
                 asientoTP = anchor;
+
+            // Temporarily disable physics
+            rb = asientoGO.GetComponent<Rigidbody>();
+            if (rb != null) rb.isKinematic = true;
+            col = asientoGO.GetComponent<Collider>();
+            if (col != null) col.enabled = false;
         }
 
-        // Teletransportar al asiento
-        if (asientoTP != null)
-            asientoTP.RequestTeleport();
+        // Wait a moment before teleport
+        yield return new WaitForSeconds(0.1f);
+        yield return new WaitForEndOfFrame();
 
-        // Reparentar y escalar el XR Rig
+        // Teleport the player to the ball
+        if (asientoTP != null) asientoTP.RequestTeleport();
+
+        // Wait for teleport to apply
+        yield return new WaitForSeconds(0.1f);
+        yield return new WaitForEndOfFrame();
+
+        // Reparent and scale XR Rig
         if (asientoGO != null && jugadorRig != null)
         {
             jugadorRigOriginalWorldScale = jugadorRig.transform.lossyScale;
@@ -93,13 +98,22 @@ public class CocinaSolarScript : MonoBehaviour
             jugadorRig.transform.localPosition = Vector3.zero;
             jugadorRig.transform.localRotation = Quaternion.identity;
             SetWorldScale(jugadorRig.transform, jugadorRigOriginalWorldScale / 100f);
+
+            // Disable CharacterController
+            var cc = jugadorRig.GetComponent<CharacterController>();
+            if (cc != null) cc.enabled = false;
         }
 
-        playerDentro = true;
-        if (ingresarBtn != null)
-            ingresarBtn.interactable = false;
+        // Wait before re-enabling physics
+        yield return new WaitForSeconds(0.3f);
 
-        // Iniciar temporizador
+        if (rb != null) rb.isKinematic = false;
+        if (col != null) col.enabled = true;
+
+        playerDentro = true;
+        if (ingresarBtn != null) ingresarBtn.interactable = false;
+
+        // Start timer
         if (temporizadorCoroutine != null)
             StopCoroutine(temporizadorCoroutine);
         temporizadorCoroutine = StartCoroutine(Temporizador());
@@ -113,29 +127,31 @@ public class CocinaSolarScript : MonoBehaviour
 
     public void Salir()
     {
-        // Teletransportar al suelo
+        // Teleport to floor
         if (sueloTP != null)
             sueloTP.RequestTeleport();
 
-        // Restaurar el XR Rig
+        // Restore XR Rig
         if (jugadorRig != null)
         {
             jugadorRig.transform.SetParent(null);
             SetWorldScale(jugadorRig.transform, jugadorRigOriginalWorldScale);
+
+            // Re-enable CharacterController
+            var cc = jugadorRig.GetComponent<CharacterController>();
+            if (cc != null) cc.enabled = true;
         }
 
         playerDentro = false;
-        if (ingresarBtn != null)
-            ingresarBtn.interactable = true;
+        if (ingresarBtn != null) ingresarBtn.interactable = true;
 
-        // Detener temporizador si está corriendo
         if (temporizadorCoroutine != null)
         {
             StopCoroutine(temporizadorCoroutine);
             temporizadorCoroutine = null;
         }
 
-        // Destruir asientoGO al final
+        // Destroy the ball
         if (asientoGO != null)
         {
             Destroy(asientoGO);
@@ -143,7 +159,6 @@ public class CocinaSolarScript : MonoBehaviour
         }
     }
 
-    // Establecer la escala local para una escala global deseada
     void SetWorldScale(Transform t, Vector3 worldScale)
     {
         if (t.parent)
@@ -161,4 +176,3 @@ public class CocinaSolarScript : MonoBehaviour
         }
     }
 }
-
