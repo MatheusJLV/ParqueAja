@@ -82,18 +82,18 @@ public class CocinaSolarScript : MonoBehaviour
         }
 
         // Teletransportar al asiento
-        /*if (asientoTP != null)
-            asientoTP.RequestTeleport();*/
+        if (asientoTP != null)
+            asientoTP.RequestTeleport();
 
         // Reparentar y escalar el XR Rig
-        /*if (asientoGO != null && jugadorRig != null)
+        if (asientoGO != null && jugadorRig != null)
         {
             jugadorRigOriginalWorldScale = jugadorRig.transform.lossyScale;
             jugadorRig.transform.SetParent(asientoGO.transform);
             jugadorRig.transform.localPosition = Vector3.zero;
             jugadorRig.transform.localRotation = Quaternion.identity;
             SetWorldScale(jugadorRig.transform, jugadorRigOriginalWorldScale / 100f);
-        }*/
+        }
 
         playerDentro = true;
         if (ingresarBtn != null)
@@ -114,15 +114,15 @@ public class CocinaSolarScript : MonoBehaviour
     public void Salir()
     {
         // Teletransportar al suelo
-        /*if (sueloTP != null)
-            sueloTP.RequestTeleport();*/
+        if (sueloTP != null)
+            sueloTP.RequestTeleport();
 
         // Restaurar el XR Rig
-        /*if (jugadorRig != null)
+        if (jugadorRig != null)
         {
             jugadorRig.transform.SetParent(null);
             SetWorldScale(jugadorRig.transform, jugadorRigOriginalWorldScale);
-        }*/
+        }
 
         playerDentro = false;
         if (ingresarBtn != null)
