@@ -45,6 +45,47 @@ public class funnelScript : MonoBehaviour
 
     private Vector3 jugadorRigOriginalWorldScale;
 
+    public float playerScaleFactor = 100f;
+
+    // Valores originales de la cámara, almacenados para restaurar después
+    private float originalFOV;
+    private float originalNearClip;
+    private float originalFarClip;
+    private bool fovReducido = false;
+
+    public void ReducirFOV()
+    {
+        if (xrCamera == null || fovReducido)
+            return;
+
+        // Guardar valores originales
+        originalFOV = xrCamera.fieldOfView;
+        originalNearClip = xrCamera.nearClipPlane;
+        originalFarClip = xrCamera.farClipPlane;
+
+        // Aplicar nuevos valores para efecto miniatura
+        xrCamera.fieldOfView = 45f;         // Ajusta según necesidad
+        xrCamera.nearClipPlane = 0.01f;     // Para evitar que se corte la geometría cercana
+        xrCamera.farClipPlane = 50f;        // Ajusta según la escala y entorno
+
+        fovReducido = true;
+    }
+
+
+    public void AumentarFOV()
+    {
+        if (xrCamera == null || !fovReducido)
+            return;
+
+        // Restaurar valores originales
+        xrCamera.fieldOfView = originalFOV;
+        xrCamera.nearClipPlane = originalNearClip;
+        xrCamera.farClipPlane = originalFarClip;
+
+        fovReducido = false;
+    }
+
+
 
     void Start()
     {
@@ -157,67 +198,20 @@ public class funnelScript : MonoBehaviour
     }
 
 
-    public void Ingresar()
-    {
-        if (playerDentro)
-        {
-            return;
-        }
-
-        if (asientoTP != null)
-        {
-            asientoTP.RequestTeleport();
-        }
-        else
-        {
-            Debug.LogWarning("El TeleportationAnchor 'asientoTP' no está asignado.");
-        }
-
-        /*if (asientoGO != null && jugadorRig != null)
-        {
-            jugadorRig.transform.SetParent(asientoGO.transform);
-            // Guardar la escala original y reducirla por 100
-            jugadorRigOriginalScale = jugadorRig.transform.localScale;
-            jugadorRig.transform.localScale = jugadorRigOriginalScale / 100f;
-            Debug.Log("Jugador ahora es hijo del asiento y su escala ha sido reducida por 100.");
-        }*/
-        if (asientoGO != null && jugadorRig != null)
-        {
-            // Guardar la escala global antes de cambiar el padre
-            jugadorRigOriginalWorldScale = jugadorRig.transform.lossyScale;
-
-            jugadorRig.transform.SetParent(asientoGO.transform);
-
-            // Ajustar la escala local para que la global sea 1/100 de la original
-            SetWorldScale(jugadorRig.transform, jugadorRigOriginalWorldScale / 100f);
-
-        }
-        else
-        {
-            Debug.LogWarning("asientoGO o jugadorRig no están asignados.");
-        }
-        playerDentro = true;
-        ingresarBtn.interactable = false;
-    }
+  
 
     public void Salir()
     {
         if (sueloTP != null)
         {
             sueloTP.RequestTeleport();
+            AumentarFOV();
         }
         else
         {
             Debug.LogWarning("El TeleportationAnchor 'sueloTP' no está asignado.");
         }
 
-        /*if (jugadorRig != null)
-        {
-            jugadorRig.transform.SetParent(null);
-            // Restaurar la escala original
-            jugadorRig.transform.localScale = jugadorRigOriginalScale;
-            Debug.Log("Jugador liberado del asiento y su escala restaurada.");
-        }*/
         if (jugadorRig != null)
         {
             // Guardar la escala global actual antes de quitar el padre (opcional)
@@ -322,6 +316,7 @@ public class funnelScript : MonoBehaviour
 
     public void IngresarEIniciar()
     {
+        ReducirFOV();
         StartCoroutine(IngresarEIniciarCoroutine());
     }
 
@@ -418,7 +413,7 @@ public class funnelScript : MonoBehaviour
             jugadorRig.transform.localRotation = Quaternion.identity;
 
 
-            SetWorldScale(jugadorRig.transform, jugadorRigOriginalWorldScale / 100f);
+            SetWorldScale(jugadorRig.transform, jugadorRigOriginalWorldScale / playerScaleFactor);
 
         }
         else
@@ -444,113 +439,4 @@ public class funnelScript : MonoBehaviour
         if (col != null) col.enabled = true;
 
     }
-
-
-    /*public IEnumerator IngresarEIniciarCoroutine()
-    {
-        Rigidbody rb = null;
-        Collider col = null;
-        // Validación para evitar duplicados o ejecuciones simultáneas
-        if (ejecutandoIngresarEIniciar || playerDentro || !puedeIniciar)
-        {
-            Debug.LogWarning("IngresarEIniciarCoroutine ya está en ejecución, el jugador ya está dentro o está en cooldown.");
-            yield break;
-        }
-
-        ejecutandoIngresarEIniciar = true;
-        puedeIniciar = false;
-
-        if (iniciarBtn != null)
-            iniciarBtn.interactable = false;
-
-        // --- Cooldown al inicio ---
-        if (cooldownInicio > 0f)
-            yield return new WaitForSeconds(cooldownInicio);
-
-        // --- Instanciar pelotaPlayerPrefab en pelotas2 ---
-        if (pelotaPlayerPrefab != null && pelotas2 != null)
-        {
-            GameObject nuevaPelota2 = Instantiate(
-                pelotaPlayerPrefab,
-                pelotas2.transform.position,
-                pelotas2.transform.rotation,
-                pelotas2.transform
-            );
-            pelotaActual2 = nuevaPelota2;
-            asientoGO = nuevaPelota2;
-
-            yield return new WaitForSeconds(0.1f);
-
-            // Buscar el componente TeleportationAnchor en los hijos
-            TeleportationAnchor anchor = nuevaPelota2.GetComponentInChildren<TeleportationAnchor>();
-            if (anchor != null)
-            {
-                asientoTP = anchor;
-                Debug.Log("TeleportationAnchor encontrado y asignado a asientoTP.");
-            }
-            else
-            {
-                Debug.LogWarning("No se encontró TeleportationAnchor en los hijos de la pelota instanciada.");
-            }
-
-            yield return new WaitForSeconds(0.1f);
-
-            // Opcional: cambiar color/transparencia si lo deseas
-            Renderer rend2 = pelotaActual2.GetComponent<Renderer>();
-            if (rend2 != null)
-            {
-                MaterialPropertyBlock block = new MaterialPropertyBlock();
-                rend2.GetPropertyBlock(block);
-                block.SetColor("_BaseColor", new Color(Random.value, Random.value, Random.value, 0.5f));
-                rend2.SetPropertyBlock(block);
-            }
-
-            Debug.Log("Pelota 2 instanciada como hija de 'pelotas2'.");
-        }
-        else
-        {
-            Debug.LogWarning("pelotaPlayerPrefab o pelotas2 no están asignados.");
-        }
-
-        // --- Teletransportar al jugador usando el nuevo asientoTP ---
-        if (asientoTP != null)
-        {
-            asientoTP.RequestTeleport();
-            Debug.Log("Teletransportado al asiento.");
-        }
-        else
-        {
-            Debug.LogWarning("El TeleportationAnchor 'asientoTP' no está asignado.");
-        }
-
-        if (asientoGO != null && jugadorRig != null)
-        {
-            // Guardar la escala global antes de cambiar el padre
-            jugadorRigOriginalWorldScale = jugadorRig.transform.lossyScale;
-
-            jugadorRig.transform.SetParent(asientoGO.transform);
-
-            // Ajustar la escala local para que la global sea 1/100 de la original
-            SetWorldScale(jugadorRig.transform, jugadorRigOriginalWorldScale / 200f);
-
-            Debug.Log("Jugador ahora es hijo del asiento y su escala global ha sido reducida por 100.");
-        }
-        else
-        {
-            Debug.LogWarning("asientoGO o jugadorRig no están asignados.");
-        }
-
-        playerDentro = true;
-        if (ingresarBtn != null)
-            ingresarBtn.interactable = false;
-
-        // --- Cooldown al final ---
-        if (cooldownFinal > 0f)
-            yield return new WaitForSeconds(cooldownFinal);
-
-        puedeIniciar = true;
-        if (iniciarBtn != null)
-            iniciarBtn.interactable = true;
-        ejecutandoIngresarEIniciar = false;
-    }*/
 }
