@@ -2,6 +2,9 @@ using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit.Locomotion.Teleportation;
 using UnityEngine.UI;
 using System.Collections;
+using UnityEngine.XR.Interaction.Toolkit;
+using UnityEngine.XR.Interaction.Toolkit.Locomotion.Movement;
+using UnityEngine.XR.Interaction.Toolkit.Locomotion.Turning;
 
 public class funnelScript : MonoBehaviour
 {
@@ -52,6 +55,49 @@ public class funnelScript : MonoBehaviour
     private float originalNearClip;
     private float originalFarClip;
     private bool fovReducido = false;
+
+    // XR locomotion references
+    public UnityEngine.XR.Interaction.Toolkit.Locomotion.LocomotionMediator locomotionSystem;
+    public TeleportationProvider teleportationProvider;
+    public ContinuousMoveProvider moveProvider; // base class works for smooth move
+    public ContinuousTurnProvider turnProvider;
+
+    public void DesactivarCharacterController()
+    {
+        if (characterController != null && characterController.enabled)
+        {
+            characterController.enabled = false;
+        }
+    }
+
+    public void ActivarCharacterController()
+    {
+        if (characterController != null && !characterController.enabled)
+        {
+            characterController.enabled = true;
+        }
+    }
+
+    public void DesactivarLocomocion()
+    {
+        if (moveProvider != null)
+            moveProvider.enabled = false;
+        if (turnProvider != null)
+            turnProvider.enabled = false;
+        if (teleportationProvider != null)
+            teleportationProvider.enabled = false;
+    }
+
+    public void ActivarLocomocion()
+    {
+        if (moveProvider != null)
+            moveProvider.enabled = true;
+        if (turnProvider != null)
+            turnProvider.enabled = true;
+        if (teleportationProvider != null)
+            teleportationProvider.enabled = true;
+    }
+
 
     public void ReducirFOV()
     {
@@ -202,10 +248,12 @@ public class funnelScript : MonoBehaviour
 
     public void Salir()
     {
+        
         if (sueloTP != null)
         {
             sueloTP.RequestTeleport();
             AumentarFOV();
+
         }
         else
         {
@@ -234,13 +282,16 @@ public class funnelScript : MonoBehaviour
 
 
 
-    public void Finalizar(GameObject objeto)
+    /*public void Finalizar(GameObject objeto)
     {
         if (objeto.CompareTag("canica"))
         {
             var canicaFunel = objeto.GetComponent<CanicaFunnel>();
             if (canicaFunel != null && canicaFunel.isPlayer)
             {
+                ActivarCharacterController();
+                ActivarLocomocion();
+                
                 Salir();
             }
             Destroy(objeto, 1f);
@@ -248,9 +299,43 @@ public class funnelScript : MonoBehaviour
 
         if (objeto.CompareTag("MainCamera"))
         {
+            ActivarCharacterController();
+            ActivarLocomocion();
+            
             Salir();
         }
+    }*/
+
+    public void Finalizar(GameObject objeto)
+    {
+        if (objeto.CompareTag("canica"))
+        {
+            var canicaFunel = objeto.GetComponent<CanicaFunnel>();
+            if (canicaFunel != null && canicaFunel.isPlayer)
+            {
+                StartCoroutine(SalirConRecuperacion());
+            }
+            Destroy(objeto, 1f);
+        }
+
+        if (objeto.CompareTag("MainCamera"))
+        {
+            StartCoroutine(SalirConRecuperacion());
+        }
     }
+
+    private IEnumerator SalirConRecuperacion()
+    {
+        Salir();
+
+        // Wait for teleport to fully resolve and player to be placed
+        yield return new WaitForSeconds(0.2f);
+        yield return new WaitForEndOfFrame(); // safer in case of XR update delay
+
+        ActivarCharacterController();
+        ActivarLocomocion();
+    }
+
 
     public void GuardarEstado()
     {
@@ -317,6 +402,8 @@ public class funnelScript : MonoBehaviour
     public void IngresarEIniciar()
     {
         ReducirFOV();
+        DesactivarLocomocion();
+        DesactivarCharacterController();
         StartCoroutine(IngresarEIniciarCoroutine());
     }
 
