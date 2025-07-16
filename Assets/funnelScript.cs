@@ -5,6 +5,7 @@ using System.Collections;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Locomotion.Movement;
 using UnityEngine.XR.Interaction.Toolkit.Locomotion.Turning;
+using System.Collections.Generic;
 
 public class funnelScript : MonoBehaviour
 {
@@ -67,6 +68,34 @@ public class funnelScript : MonoBehaviour
         if (characterController != null && characterController.enabled)
         {
             characterController.enabled = false;
+        }
+    }
+    
+    // New variable: List of GameObjects
+    [SerializeField]
+    private List<GameObject> objetos; // List of objects to activate/deactivate
+
+    // Method to activate all objects in the list
+    public void ActivarObjetos()
+    {
+        foreach (GameObject obj in objetos)
+        {
+            if (obj != null)
+            {
+                obj.SetActive(true); // Activate the object
+            }
+        }
+    }
+
+    // Method to deactivate all objects in the list
+    public void DesactivarObjetos()
+    {
+        foreach (GameObject obj in objetos)
+        {
+            if (obj != null)
+            {
+                obj.SetActive(false); // Deactivate the object
+            }
         }
     }
 
@@ -151,6 +180,7 @@ public class funnelScript : MonoBehaviour
         {
             return;
         }
+        DesactivarObjetos();
         StartCoroutine(IniciarCoroutine());
     }
 
@@ -248,7 +278,7 @@ public class funnelScript : MonoBehaviour
 
     public void Salir()
     {
-        
+        ActivarObjetos();
         if (sueloTP != null)
         {
             sueloTP.RequestTeleport();
@@ -334,6 +364,7 @@ public class funnelScript : MonoBehaviour
 
         ActivarCharacterController();
         ActivarLocomocion();
+        //ActivarObjetos();
     }
 
 
@@ -404,6 +435,7 @@ public class funnelScript : MonoBehaviour
         ReducirFOV();
         DesactivarLocomocion();
         DesactivarCharacterController();
+        //DesactivarObjetos();
         StartCoroutine(IngresarEIniciarCoroutine());
     }
 

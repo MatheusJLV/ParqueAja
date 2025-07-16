@@ -178,8 +178,8 @@ public class DibujoEspacial : MonoBehaviour
             device.TryGetFeatureValue(CommonUsages.secondaryButton, out leftSecondaryPressed);
         }
 
-        // === TOGGLE DRAWING FOR RIGHT LINE (Primary Right) ===
-        if (rightPrimaryPressed && !prevRightPrimary)
+        // === TOGGLE DRAWING FOR RIGHT LINE (Secondary Right) ===
+        if (rightSecondaryPressed && !prevRightSecondary)
         {
             isDrawing = !isDrawing;
             if (isDrawing)
@@ -193,8 +193,8 @@ public class DibujoEspacial : MonoBehaviour
             }
         }
 
-        // === TOGGLE DRAWING FOR LEFT LINE (Primary Left) ===
-        if (leftPrimaryPressed && !prevLeftPrimary)
+        // === TOGGLE DRAWING FOR LEFT LINE (Secondary Left) ===
+        if (leftSecondaryPressed && !prevLeftSecondary)
         {
             isDrawing2 = !isDrawing2;
             if (isDrawing2)
@@ -206,6 +206,13 @@ public class DibujoEspacial : MonoBehaviour
             {
                 EndLine2();
             }
+        }
+
+        // === CLEAR BOTH LINES (Primary Left) ===
+        if (leftPrimaryPressed && !prevLeftPrimary)
+        {
+            ClearAllLines();
+            ClearAllLines2();
         }
 
         // === DRAW POINTS IF ACTIVE ===
@@ -227,18 +234,6 @@ public class DibujoEspacial : MonoBehaviour
                 AddPoint2(currentPos);
                 lastPoint2 = currentPos;
             }
-        }
-
-        // === CLEAR RIGHT LINE (Secondary Right) ===
-        if (rightSecondaryPressed && !prevRightSecondary)
-        {
-            ClearAllLines();
-        }
-
-        // === CLEAR LEFT LINE (Secondary Left) ===
-        if (leftSecondaryPressed && !prevLeftSecondary)
-        {
-            ClearAllLines2();
         }
 
         // === UPDATE PREVIOUS BUTTON STATES ===
