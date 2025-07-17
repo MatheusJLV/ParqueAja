@@ -63,12 +63,15 @@ public class funnelScript : MonoBehaviour
     public ContinuousMoveProvider moveProvider; // base class works for smooth move
     public ContinuousTurnProvider turnProvider;
 
+    public FiltroAudio filtro;
+
     public void DesactivarCharacterController()
     {
         if (characterController != null && characterController.enabled)
         {
             characterController.enabled = false;
         }
+        filtro.ActivarFiltroMuffled();
     }
     
     // New variable: List of GameObjects
@@ -85,6 +88,7 @@ public class funnelScript : MonoBehaviour
                 obj.SetActive(true); // Activate the object
             }
         }
+        filtro.DesactivarFiltroMuffled(); // Activar filtro de audio
     }
 
     // Method to deactivate all objects in the list
@@ -111,8 +115,8 @@ public class funnelScript : MonoBehaviour
     {
         if (moveProvider != null)
             moveProvider.enabled = false;
-        if (turnProvider != null)
-            turnProvider.enabled = false;
+        //if (turnProvider != null)
+        //    turnProvider.enabled = false;
         if (teleportationProvider != null)
             teleportationProvider.enabled = false;
     }
@@ -121,8 +125,8 @@ public class funnelScript : MonoBehaviour
     {
         if (moveProvider != null)
             moveProvider.enabled = true;
-        if (turnProvider != null)
-            turnProvider.enabled = true;
+        //if (turnProvider != null)
+        //    turnProvider.enabled = true;
         if (teleportationProvider != null)
             teleportationProvider.enabled = true;
     }
@@ -180,7 +184,7 @@ public class funnelScript : MonoBehaviour
         {
             return;
         }
-        DesactivarObjetos();
+        
         StartCoroutine(IniciarCoroutine());
     }
 
@@ -558,4 +562,9 @@ public class funnelScript : MonoBehaviour
         if (col != null) col.enabled = true;
 
     }
+
+    /*public override void HandleEmergencyExit()
+    {
+        Salir();
+    }*/
 }

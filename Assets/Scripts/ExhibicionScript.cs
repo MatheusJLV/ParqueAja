@@ -28,7 +28,10 @@ public class ExhibicionScript : MonoBehaviour
     private List<Vector3> storedPositionsParents = new List<Vector3>(); // List to store parent positions
     private List<Quaternion> storedRotationsParents = new List<Quaternion>(); // List to store parent rotations
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    /*// NUEVAS VARIABLES
+    public Inmersible inmersible;
+    public InmersiveManager inmersiveManager;*/
+
     void Start()
     {
         // Check if objetosContenidos and prefabsExhibicion are the same size
@@ -67,7 +70,23 @@ public class ExhibicionScript : MonoBehaviour
         SuspensionExhibicion();
     }
 
-    // Method to delete all game objects in objetosContenidos and objetosContenidosParents
+    /*// NUEVOS MÉTODOS
+    public void SetInmersivo()
+    {
+        if (inmersiveManager != null)
+        {
+            inmersiveManager.inmersible = inmersible;
+        }
+    }
+
+    public void UnsetInmersivo()
+    {
+        if (inmersiveManager != null)
+        {
+            inmersiveManager.inmersible = null;
+        }
+    }*/
+
     public void Eliminar()
     {
         foreach (GameObject obj in objetosContenidos)
@@ -89,7 +108,6 @@ public class ExhibicionScript : MonoBehaviour
         objetosContenidosParents.Clear();
     }
 
-    // Method to load prefabs using the stored positions and rotations
     public void Cargar()
     {
         int index = 0;
@@ -124,14 +142,12 @@ public class ExhibicionScript : MonoBehaviour
         }
     }
 
-    // Method to reset the exhibition by calling Eliminar and then Cargar
     public void ResetExhibicion()
     {
         Eliminar();
         Cargar();
     }
 
-    // Method to reactivate the exhibition when another collider enters the trigger collider
     public void ReactivacionExhibicion()
     {
         foreach (GameObject obj in objetosContenidos)
@@ -174,7 +190,6 @@ public class ExhibicionScript : MonoBehaviour
         }
     }
 
-    // Method to suspend the exhibition when another collider exits the trigger collider
     public void SuspensionExhibicion()
     {
         foreach (GameObject obj in objetosContenidos)
@@ -225,21 +240,29 @@ public class ExhibicionScript : MonoBehaviour
         }
     }
 
-    // Method called when another collider enters the trigger collider
     private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Player")) // Check if the entering object is tagged as "Player"
+        if (other.CompareTag("Player"))
         {
             ReactivacionExhibicion();
+            /*if (inmersiveManager != null && inmersible != null)
+            {
+                inmersiveManager.enabled = true; // Activar el componente primero
+                SetInmersivo();
+            }*/
         }
     }
 
-    // Method called when another collider exits the trigger collider
     private void OnTriggerExit(Collider other)
     {
-        if (other.CompareTag("Player")) // Check if the exiting object is tagged as "Player"
+        if (other.CompareTag("Player"))
         {
             SuspensionExhibicion();
+            /*if (inmersiveManager != null && inmersible != null)
+            {
+                UnsetInmersivo();
+                inmersiveManager.enabled = false; // Desactivar el componente después
+            }*/
         }
     }
 }
