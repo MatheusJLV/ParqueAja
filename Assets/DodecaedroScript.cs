@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 using UnityEngine.XR.Interaction.Toolkit;
+using System.Collections;
 
 public class DodecaedroScript : MonoBehaviour
 {
@@ -90,7 +91,7 @@ public class DodecaedroScript : MonoBehaviour
     }
 
 
-    private void RemoveFromNode(LinkedListNode<PinData> startNode)
+    /*private void RemoveFromNode(LinkedListNode<PinData> startNode)
     {
         LinkedListNode<PinData> node = startNode;
 
@@ -132,8 +133,73 @@ public class DodecaedroScript : MonoBehaviour
         {
             SetMaterial(placedPins.Last.Value.pinObject, lastPlacedMaterial);
         }
+    }*/
+
+    private void RemoveFromNode(LinkedListNode<PinData> startNode)
+    {
+        LinkedListNode<PinData> node = startNode;
+
+        while (node != null)
+        {
+            // 1. Destroy line
+            if (node.Value.lineFromPrevious != null)
+            {
+                Destroy(node.Value.lineFromPrevious.gameObject);
+            }
+
+            // 2. Try to release from socket
+            if (node.Value.anchor.TryGetComponent(out XRSocketInteractor socket))
+            {
+                if (socket.hasSelection)
+                {
+                    var selected = socket.firstInteractableSelected;
+                    socket.interactionManager.SelectExit(socket, selected);
+                }
+
+                // 3. Drop the pin
+                GameObject pin = node.Value.pinObject;
+                pin.transform.SetParent(null); // Unparent from dodecahedron
+
+                if (pin.TryGetComponent(out Rigidbody rb))
+                {
+                    rb.isKinematic = false;
+                    rb.useGravity = true;
+
+                    // Apply a small force away from socket
+                    Vector3 awayFromSocket = (pin.transform.position - socket.transform.position).normalized;
+                    rb.AddForce(awayFromSocket * 0.015f, ForceMode.Impulse);
+                }
+
+                // Temporarily disable the socket to avoid resocketing
+                StartCoroutine(TemporarilyDisableSocket(socket, 0.5f));
+            }
+
+            // 4. Remove from list
+            var next = node.Next;
+            placedPins.Remove(node);
+            node = next;
+        }
+
+        // 5. Reset highlight on new last pin
+        if (placedPins.Last != null)
+        {
+            SetMaterial(placedPins.Last.Value.pinObject, lastPlacedMaterial);
+        }
     }
 
+
+
+    private IEnumerator TemporarilyDisableSocket(XRSocketInteractor socket, float delay)
+    {
+        Collider col = socket.GetComponent<Collider>();
+        if (col != null) col.enabled = false;
+        socket.enabled = false;
+
+        yield return new WaitForSeconds(delay);
+
+        if (col != null) col.enabled = true;
+        socket.enabled = true;
+    }
 
 
     // Placeholder for line intersection logic
