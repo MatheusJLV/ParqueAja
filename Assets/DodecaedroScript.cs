@@ -13,7 +13,7 @@ public class DodecaedroScript : MonoBehaviour
     [Header("Line Settings")]
     public GameObject linePrefab; // Prefab with a LineRenderer
 
-    private LinkedList<PinData> placedPins = new LinkedList<PinData>();
+    public LinkedList<PinData> placedPins = new LinkedList<PinData>();
 
     [Header("Parenting")]
     public Transform dodecahedronRoot;
@@ -48,7 +48,7 @@ public class DodecaedroScript : MonoBehaviour
             var prevPin = placedPins.Last.Value;
             line.positionCount = 2;
             line.SetPosition(0, dodecahedronRoot.InverseTransformPoint(prevPin.pinObject.transform.position));
-            line.SetPosition(1, dodecahedronRoot.InverseTransformPoint(pin.transform.position));
+            line.SetPosition(1, dodecahedronRoot.InverseTransformPoint(anchor.transform.position));
 
             newPinData.lineFromPrevious = line;
         }
@@ -73,6 +73,7 @@ public class DodecaedroScript : MonoBehaviour
     public void OnRemovePin(SelectExitEventArgs args)
     {
         GameObject pin = args.interactableObject.transform.gameObject;
+        SetMaterial(pin,normalMaterial);
         RemovePin(pin); // Calls the existing logic
     }
     public void RemovePin(GameObject pin)
