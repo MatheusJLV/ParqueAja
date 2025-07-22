@@ -23,21 +23,29 @@ public class HammiltonInmersivo : MonoBehaviour
 
     [Header("Prefabs & Positions")]
     public GameObject pelotaPlayerPrefab;
-    public Transform spawnPoint=null; // Where the ball spawns (e.g., anchor or visual location)
-
-    [Header("Scale Settings")]
-    public float playerScaleFactor = 100f;
+    public Transform spawnPoint = null;
 
     [Header("Teleport Targets")]
     public TeleportationAnchor sueloTP;
 
+    [Header("World Immersion (Dodecahedron-Based)")]
+    public Transform dodecaedro;
+    public float dodecaedroScaleFactor = 250f;
+    public Vector3 skyOffset = new Vector3(0f, 100f, 0f);
+
+    [Header("Traversal Settings")]
+    public float traversalSpeed = 0.2f;
+
+    [SerializeField]
+    private List<GameObject> objetos;
+
     private GameObject currentBallInstance;
-    private TeleportationAnchor asientoTP;
     private GameObject asientoGO;
 
     private Vector3 jugadorRigOriginalWorldScale;
     private bool playerDentro = false;
     private bool ejecutandoIngresar = false;
+    private bool followBall = false;
 
     private float originalFOV;
     private float originalNearClip;
@@ -46,104 +54,92 @@ public class HammiltonInmersivo : MonoBehaviour
 
     private Vector3 anchorSpawn;
     private Vector3 pinSpawn;
+    private Vector3 rawOffset;
 
-    private Vector3 traversalOffset = Vector3.zero;
+    private Vector3 originalDodecaedroPosition;
+    private Quaternion originalDodecaedroRotation;
+    private Vector3 originalDodecaedroScale;
 
-    // New variable: List of GameObjects
-    [SerializeField]
-    private List<GameObject> objetos; // List of objects to activate/deactivate
+    [Header("Offset Settings")]
+    public float offsetDistance = 0.1f; // Puedes ajustar este valor desde el Inspector
 
-    // Method to activate all objects in the list
-    public void ActivarObjetos()
+
+
+    void Update()
     {
-        foreach (GameObject obj in objetos)
+        if (followBall && currentBallInstance != null && jugadorRig != null)
         {
-            if (obj != null)
-            {
-                obj.SetActive(true); // Activate the object
-            }
-        }
-        filtro.DesactivarFiltroMuffled(); // Activar filtro de audio
-    }
-
-    // Method to deactivate all objects in the list
-    public void DesactivarObjetos()
-    {
-        foreach (GameObject obj in objetos)
-        {
-            if (obj != null)
-            {
-                obj.SetActive(false); // Deactivate the object
-            }
+            jugadorRig.transform.position = currentBallInstance.transform.position;
         }
     }
 
-    public void Ingresar()
+    public void IngresarNoParent()
     {
-        anchorSpawn= (Vector3)(dodecaedroScript.placedPins.First?.Value.anchor.position); // Get the first pin's anchor position
-        pinSpawn= (Vector3)(dodecaedroScript.placedPins.First?.Value.pinObject.transform.position); // Get the first pin's pin position
-        spawnPoint = dodecaedroScript.placedPins.First?.Value.anchor; // Get the first pin's anchor as spawn point
-        if (spawnPoint == null)
+        if (dodecaedroScript.placedPins.First == null)
         {
-            Debug.LogError("No spawn point set. Please place a pin first.");
+            Debug.LogError("No pins placed. Cannot enter immersive mode.");
             return;
         }
-        ReducirFOV();
-        DesactivarLocomocion();
+
+        var firstPin = dodecaedroScript.placedPins.First.Value;
+        spawnPoint = firstPin.anchor;
+
+        if (spawnPoint == null)
+        {
+            Debug.LogError("Spawn point missing on first pin.");
+            return;
+        }
+
+        anchorSpawn = firstPin.anchor.position;
+        pinSpawn = firstPin.pinObject.transform.position;
+        rawOffset = (pinSpawn - anchorSpawn) * 1.5f;
+
+        originalDodecaedroPosition = dodecaedro.position;
+        originalDodecaedroRotation = dodecaedro.rotation;
+        originalDodecaedroScale = dodecaedro.localScale;
+
+        dodecaedro.position += skyOffset;
+        dodecaedro.localScale *= dodecaedroScaleFactor;
+
         DesactivarCharacterController();
+        DesactivarLocomocion();
+        ReducirFOV();
         DesactivarObjetos();
-        StartCoroutine(IngresarCoroutine());
+
+        StartCoroutine(IngresarNoParentCoroutine());
     }
 
-    private IEnumerator IngresarCoroutine()
+    private IEnumerator IngresarNoParentCoroutine()
     {
-        if (ejecutandoIngresar || playerDentro) yield break;
+        if (ejecutandoIngresar || playerDentro)
+            yield break;
 
         ejecutandoIngresar = true;
 
-        // Instantiate the ball
         if (pelotaPlayerPrefab != null && spawnPoint != null)
         {
-            traversalOffset = (pinSpawn - anchorSpawn)*1.5f;
-            currentBallInstance = Instantiate(pelotaPlayerPrefab, spawnPoint.position + 1.5f* traversalOffset, spawnPoint.rotation, spawnPoint);
+            currentBallInstance = Instantiate(
+                pelotaPlayerPrefab,
+                spawnPoint.position + rawOffset,
+                spawnPoint.rotation,
+                spawnPoint
+            );
             asientoGO = currentBallInstance;
 
             var rb = currentBallInstance.GetComponent<Rigidbody>();
             var col = currentBallInstance.GetComponent<Collider>();
             if (rb) rb.isKinematic = true;
             if (col) col.enabled = false;
-
-            asientoTP = currentBallInstance.GetComponentInChildren<TeleportationAnchor>();
         }
 
-        yield return new WaitForSeconds(0.1f);
+        yield return new WaitForSeconds(0.3f);
 
-        if (asientoTP != null)
-            asientoTP.RequestTeleport();
-
-        yield return new WaitForSeconds(0.1f);
-        yield return new WaitForEndOfFrame();
-
-        // Parent and scale the player
-        if (asientoGO != null && jugadorRig != null)
-        {
-            jugadorRigOriginalWorldScale = jugadorRig.transform.lossyScale;
-            jugadorRig.transform.SetParent(asientoGO.transform);
-            jugadorRig.transform.localPosition = Vector3.zero;
-            jugadorRig.transform.localRotation = Quaternion.identity;
-            SetWorldScale(jugadorRig.transform, jugadorRigOriginalWorldScale / playerScaleFactor);
-        }
-
-        yield return new WaitForSeconds(0.3f); // let hierarchy settle
-
-        var rbFinal = currentBallInstance?.GetComponent<Rigidbody>();
-        var colFinal = currentBallInstance?.GetComponent<Collider>();
-        if (rbFinal) rbFinal.isKinematic = false;
-        if (colFinal) colFinal.enabled = true;
-
+        followBall = true;
         playerDentro = true;
         ejecutandoIngresar = false;
+
         filtro?.ActivarFiltroMuffled();
+
         StartHamiltonianPathTraversal();
     }
 
@@ -157,10 +153,7 @@ public class HammiltonInmersivo : MonoBehaviour
             sueloTP.RequestTeleport();
 
         if (jugadorRig != null)
-        {
             jugadorRig.transform.SetParent(null);
-            SetWorldScale(jugadorRig.transform, jugadorRigOriginalWorldScale);
-        }
 
         if (currentBallInstance != null)
             Destroy(currentBallInstance, 1f);
@@ -170,24 +163,64 @@ public class HammiltonInmersivo : MonoBehaviour
         playerDentro = false;
     }
 
-    // ---------- Utility Methods ----------
-
-    void SetWorldScale(Transform t, Vector3 worldScale)
+    public void StartHamiltonianPathTraversal()
     {
-        if (t.parent)
+        if (!playerDentro || currentBallInstance == null)
         {
-            Vector3 parentScale = t.parent.lossyScale;
-            t.localScale = new Vector3(
-                worldScale.x / parentScale.x,
-                worldScale.y / parentScale.y,
-                worldScale.z / parentScale.z
-            );
+            Debug.LogWarning("Cannot start path traversal. Player not inside the ball.");
+            return;
         }
-        else
-        {
-            t.localScale = worldScale;
-        }
+
+        StopAllCoroutines();
+        StartCoroutine(TraversePathCoroutine());
     }
+
+    private IEnumerator TraversePathCoroutine()
+    {
+        if (dodecaedroScript == null || dodecaedroScript.placedPins == null || dodecaedroScript.placedPins.Count < 2)
+        {
+            Debug.LogWarning("Not enough pins to traverse.");
+            yield break;
+        }
+
+        var node = dodecaedroScript.placedPins.First;
+
+        while (node != null)
+        {
+            Vector3 pinPos = node.Value.pinObject.transform.position;
+            Vector3 direction = (pinPos - dodecaedro.position).normalized;
+            Vector3 targetPos = pinPos + direction * offsetDistance;
+
+            while (Vector3.Distance(currentBallInstance.transform.position, targetPos) > 0.18f)
+            {
+                Vector3 moveDir = (targetPos - currentBallInstance.transform.position).normalized;
+                currentBallInstance.transform.position += moveDir * traversalSpeed * Time.deltaTime;
+
+                if (moveDir != Vector3.zero)
+                {
+                    Quaternion targetRot = Quaternion.LookRotation(moveDir, Vector3.up);
+                    currentBallInstance.transform.rotation = Quaternion.Slerp(currentBallInstance.transform.rotation, targetRot, 5f * Time.deltaTime);
+                }
+
+                yield return null;
+            }
+
+            currentBallInstance.transform.position = targetPos;
+            node = node.Next;
+            yield return null;
+        }
+
+
+        followBall = false;
+
+        dodecaedro.position = originalDodecaedroPosition;
+        dodecaedro.rotation = originalDodecaedroRotation;
+        dodecaedro.localScale = originalDodecaedroScale;
+
+        filtro?.DesactivarFiltroMuffled();
+        playerDentro = false;
+    }
+
 
     void ReducirFOV()
     {
@@ -243,59 +276,15 @@ public class HammiltonInmersivo : MonoBehaviour
             teleportationProvider.enabled = true;
     }
 
-    public void StartHamiltonianPathTraversal()
+    public void ActivarObjetos()
     {
-        if (!playerDentro || currentBallInstance == null)
-        {
-            Debug.LogWarning("Cannot start path traversal. Player not inside the ball.");
-            return;
-        }
-
-        StopAllCoroutines(); // In case anything else is running
-        StartCoroutine(TraversePathCoroutine());
+        foreach (GameObject obj in objetos)
+            if (obj != null) obj.SetActive(true);
     }
 
-    private IEnumerator TraversePathCoroutine()
+    public void DesactivarObjetos()
     {
-        if (dodecaedroScript == null || dodecaedroScript.placedPins == null || dodecaedroScript.placedPins.Count < 2)
-        {
-            Debug.LogWarning("Not enough pins to traverse.");
-            yield break;
-        }
-
-        var node = dodecaedroScript.placedPins.First;
-
-        while (node != null)
-        {
-            Vector3 targetPos = node.Value.anchor.position + traversalOffset;
-
-            while (Vector3.Distance(currentBallInstance.transform.position, targetPos) > 0.01f)
-            {
-                Vector3 direction = (targetPos - currentBallInstance.transform.position).normalized;
-                float speed = 0.1f;
-                currentBallInstance.transform.position += direction * speed * Time.deltaTime;
-
-                if (direction != Vector3.zero)
-                {
-                    Quaternion targetRot = Quaternion.LookRotation(direction, Vector3.up);
-                    currentBallInstance.transform.rotation = Quaternion.Slerp(currentBallInstance.transform.rotation, targetRot, 5f * Time.deltaTime);
-                }
-
-                yield return null;
-            }
-
-            // Snap exactly
-            currentBallInstance.transform.position = targetPos;
-
-
-            node = node.Next;
-
-            yield return null;
-        }
-
-        Debug.Log("Traversal complete.");
+        foreach (GameObject obj in objetos)
+            if (obj != null) obj.SetActive(false);
     }
-
-
-
 }
