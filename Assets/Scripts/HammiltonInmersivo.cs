@@ -31,10 +31,10 @@ public class HammiltonInmersivo : MonoBehaviour
     [Header("World Immersion (Dodecahedron-Based)")]
     public Transform dodecaedro;
     public float dodecaedroScaleFactor = 250f;
-    public Vector3 skyOffset = new Vector3(0f, 100f, 0f);
+    public Vector3 skyOffset = new Vector3(0f, 200f, 0f); // estaba en 100
 
     [Header("Traversal Settings")]
-    public float traversalSpeed = 0.2f;
+    public float traversalSpeed = 5f;
 
     [SerializeField]
     private List<GameObject> objetos;
@@ -61,11 +61,11 @@ public class HammiltonInmersivo : MonoBehaviour
     private Vector3 originalDodecaedroScale;
 
     [Header("Offset Settings")]
-    public float offsetDistance = 0.1f; // Puedes ajustar este valor desde el Inspector
+    public float offsetDistance = 1.5f; // Puedes ajustar este valor desde el Inspector
 
 
 
-    void Update()
+    void FixedUpdate()
     {
         if (followBall && currentBallInstance != null && jugadorRig != null)
         {
@@ -92,7 +92,7 @@ public class HammiltonInmersivo : MonoBehaviour
 
         anchorSpawn = firstPin.anchor.position;
         pinSpawn = firstPin.pinObject.transform.position;
-        rawOffset = (pinSpawn - anchorSpawn) * 1.5f;
+        rawOffset = (pinSpawn - anchorSpawn) * 2.5f;
 
         originalDodecaedroPosition = dodecaedro.position;
         originalDodecaedroRotation = dodecaedro.rotation;
@@ -145,23 +145,44 @@ public class HammiltonInmersivo : MonoBehaviour
 
     public void Salir()
     {
+        // Reset dodecaedro scale & position first
+        dodecaedro.position = originalDodecaedroPosition;
+        dodecaedro.rotation = originalDodecaedroRotation;
+        dodecaedro.localScale = originalDodecaedroScale;
+
+        followBall = false;
+
+        // Unparent just in case
+        if (jugadorRig != null)
+            jugadorRig.transform.SetParent(null);
+
+        // Re-enable control systems
         ActivarCharacterController();
         ActivarLocomocion();
         filtro?.DesactivarFiltroMuffled();
 
-        if (sueloTP != null)
-            sueloTP.RequestTeleport();
-
-        if (jugadorRig != null)
-            jugadorRig.transform.SetParent(null);
-
+        // Cleanup ball
         if (currentBallInstance != null)
             Destroy(currentBallInstance, 1f);
 
-        AumentarFOV();
+        // Activate UI/objects again
         ActivarObjetos();
+
         playerDentro = false;
+
+        // Delay teleport to allow hierarchy to reset
+        StartCoroutine(DelayedTeleport());
     }
+
+    private IEnumerator DelayedTeleport()
+    {
+        yield return new WaitForEndOfFrame(); // Let transforms settle
+        yield return new WaitForSeconds(0.1f); // Extra delay if needed
+
+        if (sueloTP != null)
+            sueloTP.RequestTeleport();
+    }
+
 
     public void StartHamiltonianPathTraversal()
     {
@@ -191,15 +212,25 @@ public class HammiltonInmersivo : MonoBehaviour
             Vector3 direction = (pinPos - dodecaedro.position).normalized;
             Vector3 targetPos = pinPos + direction * offsetDistance;
 
-            while (Vector3.Distance(currentBallInstance.transform.position, targetPos) > 0.18f)
+            while (Vector3.Distance(currentBallInstance.transform.position, targetPos) > 3f)
             {
                 Vector3 moveDir = (targetPos - currentBallInstance.transform.position).normalized;
                 currentBallInstance.transform.position += moveDir * traversalSpeed * Time.deltaTime;
 
+                // --- Rotación con gravedad simulada ---
                 if (moveDir != Vector3.zero)
                 {
-                    Quaternion targetRot = Quaternion.LookRotation(moveDir, Vector3.up);
-                    currentBallInstance.transform.rotation = Quaternion.Slerp(currentBallInstance.transform.rotation, targetRot, 5f * Time.deltaTime);
+                    // Forward: dirección del movimiento
+                    Quaternion targetForwardRot = Quaternion.LookRotation(moveDir, Vector3.up);
+
+                    // Gravedad: inclinación hacia el centro del dodecaedro
+                    Vector3 gravityDir = (dodecaedro.position - jugadorRig.transform.position).normalized;
+                    Quaternion gravityRot = Quaternion.FromToRotation(jugadorRig.transform.up, gravityDir);
+
+                    // Combina ambas y aplica suavemente
+                    Quaternion targetRot = gravityRot * targetForwardRot;
+
+                    jugadorRig.transform.rotation = Quaternion.Slerp(jugadorRig.transform.rotation, targetRot, 2f * Time.deltaTime);
                 }
 
                 yield return null;
@@ -217,8 +248,9 @@ public class HammiltonInmersivo : MonoBehaviour
         dodecaedro.rotation = originalDodecaedroRotation;
         dodecaedro.localScale = originalDodecaedroScale;
 
-        filtro?.DesactivarFiltroMuffled();
+        //filtro?.DesactivarFiltroMuffled();
         playerDentro = false;
+        Salir();
     }
 
 

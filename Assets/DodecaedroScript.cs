@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 using UnityEngine.XR.Interaction.Toolkit;
 using System.Collections;
+using UnityEngine.UI;
 
 public class DodecaedroScript : MonoBehaviour
 {
@@ -18,6 +19,17 @@ public class DodecaedroScript : MonoBehaviour
     [Header("Parenting")]
     public Transform dodecahedronRoot;
 
+    [Header("Immersion UI")]
+    public Button immersionUIButton;
+
+    private void ValidateImmersionButton()
+    {
+        if (immersionUIButton != null)
+        {
+            immersionUIButton.interactable = placedPins.Count > 1;
+        }
+    }
+
     // Called by XRSocketInteractor's OnSelectEntered event
     public void OnPinInserted(SelectEnterEventArgs args)
     {
@@ -25,6 +37,7 @@ public class DodecaedroScript : MonoBehaviour
         Transform anchor = args.interactorObject.transform; // the socket
 
         AddPin(pin, anchor);
+        ValidateImmersionButton();
     }
 
     public void AddPin(GameObject pin, Transform anchor)
@@ -85,6 +98,7 @@ public class DodecaedroScript : MonoBehaviour
             if (node.Value.pinObject == pin)
             {
                 RemoveFromNode(node);
+                ValidateImmersionButton();
                 return;
             }
             node = node.Next;
@@ -201,6 +215,15 @@ public class DodecaedroScript : MonoBehaviour
         if (col != null) col.enabled = true;
         socket.enabled = true;
     }
+
+    public void RemoveFirstPin()
+    {
+        if (placedPins.First != null)
+        {
+            RemoveFromNode(placedPins.First);
+        }
+    }
+
 
 
     // Placeholder for line intersection logic
