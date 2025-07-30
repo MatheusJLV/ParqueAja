@@ -33,7 +33,7 @@ public class CatenariaEnhanced : MonoBehaviour
 
     [Header("Physics Tuning")]
     public float gravityForceModifier = 0.2f;
-    public float drag = 0.05f;
+    public float drag = 0.0f;
     public float angularDrag = 1f;
 
 
@@ -148,8 +148,8 @@ public class CatenariaEnhanced : MonoBehaviour
         {
             rb.isKinematic = false;
             //rb.useGravity = true;
-            rb.AddForce(Physics.gravity * gravityForceModifier, ForceMode.Acceleration); // 30% gravity
-            rb.linearDamping = drag;             // This is the correct property, not linearDamping
+            rb.AddForce(Physics.gravity * gravityForceModifier, ForceMode.Acceleration); 
+            rb.linearDamping = drag;            
             rb.angularDamping = angularDrag;
 
             // Note: DO NOT set Physics.gravity globally here — it affects all objects.
@@ -187,7 +187,7 @@ public class CatenariaEnhanced : MonoBehaviour
         yield return null; // Let transform hierarchy settle
 
         // 3. Wait more before resetting parent
-        yield return new WaitForSeconds(3.5f);
+        yield return new WaitForSeconds(7f);
         currentGO.transform.SetPositionAndRotation(originalPosition, originalRotation);
         Debug.Log($"currentGO has {currentGO.transform.childCount} children.");
 
@@ -221,25 +221,31 @@ public class CatenariaEnhanced : MonoBehaviour
                 rb.angularVelocity = Vector3.zero;
                 rb.linearDamping = 0f;             // This is the correct property, not linearDamping
                 rb.angularDamping = 0.05f;
-                rb.useGravity = true;
+                //rb.useGravity = true;
+                StartCoroutine(ApplyCustomGravity(rb, 5f, 0.05f)); // Apply for 5 seconds
+
             }
         }
         Debug.Log($"currentGO has {currentGO.transform.childCount} children.");
 
         yield return new WaitForSeconds(1.5f);
 
-        /*foreach (Transform child in currentGO.transform)
-        {
-            var rb = child.GetComponent<Rigidbody>();
-            if (rb)
-            {
-                rb.useGravity = true;
-
-            }
-        }*/
         animacionBTN.interactable = true;
     }
 
+    IEnumerator ApplyCustomGravity(Rigidbody rb, float duration, float intensity = 1f)
+    {
+        float timer = 0f;
+        while (timer < duration)
+        {
+            rb.AddForce(Physics.gravity * intensity, ForceMode.Acceleration);
+            timer += Time.fixedDeltaTime;
+            yield return new WaitForFixedUpdate();
+        }
+
+        // Optionally switch to built-in gravity
+        //rb.useGravity = true;
+    }
 
     private IEnumerator MoveOverTime(Transform t, Vector3 from, Vector3 to, float duration)
     {
