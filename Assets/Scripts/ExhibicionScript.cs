@@ -28,10 +28,6 @@ public class ExhibicionScript : MonoBehaviour
     private List<Vector3> storedPositionsParents = new List<Vector3>(); // List to store parent positions
     private List<Quaternion> storedRotationsParents = new List<Quaternion>(); // List to store parent rotations
 
-    /*// NUEVAS VARIABLES
-    public Inmersible inmersible;
-    public InmersiveManager inmersiveManager;*/
-
     void Start()
     {
         // Check if objetosContenidos and prefabsExhibicion are the same size
@@ -70,22 +66,6 @@ public class ExhibicionScript : MonoBehaviour
         SuspensionExhibicion();
     }
 
-    /*// NUEVOS MÉTODOS
-    public void SetInmersivo()
-    {
-        if (inmersiveManager != null)
-        {
-            inmersiveManager.inmersible = inmersible;
-        }
-    }
-
-    public void UnsetInmersivo()
-    {
-        if (inmersiveManager != null)
-        {
-            inmersiveManager.inmersible = null;
-        }
-    }*/
 
     public void Eliminar()
     {
@@ -245,11 +225,6 @@ public class ExhibicionScript : MonoBehaviour
         if (other.CompareTag("Player"))
         {
             ReactivacionExhibicion();
-            /*if (inmersiveManager != null && inmersible != null)
-            {
-                inmersiveManager.enabled = true; // Activar el componente primero
-                SetInmersivo();
-            }*/
         }
     }
 
@@ -258,11 +233,6 @@ public class ExhibicionScript : MonoBehaviour
         if (other.CompareTag("Player"))
         {
             SuspensionExhibicion();
-            /*if (inmersiveManager != null && inmersible != null)
-            {
-                UnsetInmersivo();
-                inmersiveManager.enabled = false; // Desactivar el componente después
-            }*/
         }
     }
 }

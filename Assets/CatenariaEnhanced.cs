@@ -18,6 +18,10 @@ public class CatenariaEnhanced : MonoBehaviour
     public string currentPrefabST;
     public GameObject currentGO;
 
+    [Header("Catenaria Pieces")]
+    public List<Rigidbody> cubos = new List<Rigidbody>();
+
+
 
     [Header("Animation Settings")]
     public float liftHeight = 2f;
@@ -42,6 +46,7 @@ public class CatenariaEnhanced : MonoBehaviour
 
     public ExhibicionScript exhibicionScript; // Reference to the exhibition script
 
+    private bool fisicasArtificialesApagables = false;
 
     private void Start()
     {
@@ -58,7 +63,27 @@ public class CatenariaEnhanced : MonoBehaviour
         {
             OnDropdownValueChanged(prefabDD.value);
         }*/
-        
+        ActualizarCubos();
+    }
+    public void ActualizarCubos()
+    {
+        cubos.Clear();
+
+        if (currentGO == null)
+        {
+            Debug.LogWarning("No currentGO assigned. Cannot update cubos list.");
+            return;
+        }
+
+        Rigidbody[] rbs = currentGO.GetComponentsInChildren<Rigidbody>(includeInactive: true);
+
+        foreach (var rb in rbs)
+        {
+            if (rb != null && !cubos.Contains(rb))
+                cubos.Add(rb);
+        }
+
+        Debug.Log($"Cubos list updated. Total: {cubos.Count} rigidbodies.");
     }
 
     /*private void OnDropdownValueChanged(int index)
@@ -117,7 +142,7 @@ public class CatenariaEnhanced : MonoBehaviour
         this.currentGO = currentGO; // Ensure reference is consistent inside resetPosition()
 
         // 1. Cache child rigidbodies
-        Rigidbody[] pieceRBs = currentGO.GetComponentsInChildren<Rigidbody>();
+        Rigidbody[] pieceRBs = cubos.ToArray();
 
         // 2. Set all to kinematic
         foreach (var rb in pieceRBs)
@@ -152,7 +177,7 @@ public class CatenariaEnhanced : MonoBehaviour
             rb.linearDamping = drag;            
             rb.angularDamping = angularDrag;
 
-            // Note: DO NOT set Physics.gravity globally here — it affects all objects.
+            // Note: DO NOT set Physics.gravity globally here ï¿½ it affects all objects.
             // Instead simulate gravity scaling with custom forces if needed.
             // Example: rb.AddForce(Vector3.down * customGravity, ForceMode.Acceleration);
         }
@@ -161,7 +186,7 @@ public class CatenariaEnhanced : MonoBehaviour
         yield return ResetPositionRoutine();
     }
 
-    private IEnumerator ResetPositionRoutine()
+    /*private IEnumerator ResetPositionRoutine()
     {
         // 1. Wait for pieces to settle
         Debug.Log($"currentGO has {currentGO.transform.childCount} children.");
@@ -222,7 +247,7 @@ public class CatenariaEnhanced : MonoBehaviour
                 rb.linearDamping = 0f;             // This is the correct property, not linearDamping
                 rb.angularDamping = 0.05f;
                 //rb.useGravity = true;
-                StartCoroutine(ApplyCustomGravity(rb, 5f, 0.05f)); // Apply for 5 seconds
+                StartCoroutine(ApplyCustomGravity(rb, 60f, 0.05f)); // Apply for 60 seconds
 
             }
         }
@@ -231,7 +256,122 @@ public class CatenariaEnhanced : MonoBehaviour
         yield return new WaitForSeconds(1.5f);
 
         animacionBTN.interactable = true;
+        fisicasArtificialesApagables = true;
+    }*/
+
+    private IEnumerator ResetPositionRoutine()
+    {
+        Debug.Log($"Resetting position. Current count: {cubos.Count} cubos.");
+        yield return new WaitForSeconds(1.5f);
+
+        // Step 1: Detach all rigidbodies (cubos) from parent
+        List<Transform> detachedTransforms = new List<Transform>();
+        foreach (var rb in cubos)
+        {
+            if (rb != null && rb.transform.parent == currentGO.transform)
+            {
+                detachedTransforms.Add(rb.transform);
+                rb.transform.SetParent(null, true); // Detach from currentGO
+            }
+        }
+
+        yield return null; // Let hierarchy settle
+
+        // Step 2: Reset parent transform
+        yield return new WaitForSeconds(7f);
+        currentGO.transform.SetPositionAndRotation(originalPosition, originalRotation);
+
+        yield return null;
+
+        // Step 3: Reparent and freeze physics
+        foreach (var t in detachedTransforms)
+        {
+            var rb = t.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.isKinematic = true;
+            }
+
+            t.SetParent(currentGO.transform, true);
+            Debug.Log($"Reparented: {t.name} at {t.position}");
+        }
+
+        yield return null;
+
+        // Step 4: Unfreeze and apply artificial gravity
+        foreach (var rb in cubos)
+        {
+            if (rb != null)
+            {
+                rb.isKinematic = false;
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+                rb.linearDamping = 0f;
+                rb.angularDamping = 0.05f;
+                StartCoroutine(ApplyCustomGravity(rb, 60f, 0.05f));
+            }
+        }
+
+        yield return new WaitForSeconds(1.5f);
+
+        animacionBTN.interactable = true;
+        fisicasArtificialesApagables = true;
+
+        Debug.Log($"Reset complete. {cubos.Count} cubos handled.");
     }
+
+
+    /*public void ReactivatePhysics()
+    {
+        if (currentGO == null) return;
+
+        if (!fisicasArtificialesApagables) return;
+
+        foreach (Transform child in currentGO.transform)
+        {
+            var rb = child.GetComponent<Rigidbody>();
+            if (rb)
+            {
+                rb.isKinematic = false;
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+                rb.linearDamping = 0f;
+                rb.angularDamping = 0.05f;
+                rb.useGravity = true;
+
+                StartCoroutine(ApplyCustomGravity(rb, 5f, 0.05f));
+            }
+        }
+
+        Debug.Log("Physics reactivated for all child rigidbodies.");
+
+        fisicasArtificialesApagables = false;
+    }*/
+
+    public void ReactivatePhysics()
+    {
+        if (currentGO == null || !fisicasArtificialesApagables) return;
+
+        foreach (var rb in cubos)
+        {
+            if (rb != null)
+            {
+                rb.isKinematic = false;
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+                rb.linearDamping = 0f;
+                rb.angularDamping = 0.05f;
+                rb.useGravity = true;
+
+                StartCoroutine(ApplyCustomGravity(rb, 5f, 0.05f));
+            }
+        }
+
+        Debug.Log($"Physics reactivated for {cubos.Count} rigidbodies.");
+
+        fisicasArtificialesApagables = false;
+    }
+
 
     IEnumerator ApplyCustomGravity(Rigidbody rb, float duration, float intensity = 1f)
     {
