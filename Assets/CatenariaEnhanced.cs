@@ -471,7 +471,7 @@ public class CatenariaEnhanced : MonoBehaviour
     }
     public void ResetCatenaria()
     {
-        StopAllCoroutines(); // Stop all running coroutines to ensure clean state
+        StopAllCoroutines();
         StartCoroutine(ResetCatenariaRoutine());
     }
 
@@ -479,42 +479,28 @@ public class CatenariaEnhanced : MonoBehaviour
     {
         Debug.LogWarning("ResetCatenariaRoutine: Starting reset...");
 
-        // Reset the animation button just in case it's left disabled
         if (animacionBTN != null)
             animacionBTN.interactable = true;
 
-        // Reset internal flags
         fisicasArtificialesApagables = false;
-        currentGO = null;
+
+        // Clean up detached cubes explicitly
+        foreach (var rb in cubos)
+        {
+            if (rb != null)
+                Destroy(rb.gameObject);
+        }
         cubos.Clear();
+        currentGO = null;
 
-        // Run the exhibition reset
-        if (exhibicionScript == null)
-        {
-            Debug.LogError("ResetCatenariaRoutine: exhibicionScript is not assigned.");
-            yield break;
-        }
+        // Reset the exhibition
+        if (exhibicionScript != null)
+            exhibicionScript.ResetExhibicion();
 
-        exhibicionScript.ResetExhibicion();
-
-        // Wait a few frames to allow the instantiation and parenting to settle
         yield return null;
         yield return null;
-        yield return new WaitForSeconds(0.1f); // Extra precaution
+        yield return new WaitForSeconds(0.1f);
 
-        // Now run PostReset to re-link references and listeners
         PostReset();
-
-        // Verify that PostReset actually set currentGO
-        if (currentGO == null)
-        {
-            Debug.LogError("ResetCatenariaRoutine: PostReset failed to assign currentGO.");
-        }
-        else
-        {
-            Debug.Log("ResetCatenariaRoutine: Catenaria reset complete.");
-        }
     }
-
-
 }
