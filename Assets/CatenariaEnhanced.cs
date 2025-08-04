@@ -22,7 +22,7 @@ public class CatenariaEnhanced : MonoBehaviour
     [Header("Catenaria Pieces")]
     public List<Rigidbody> cubos = new List<Rigidbody>();
 
-
+    public GameObject respaldar;
 
     [Header("Animation Settings")]
     public float liftHeight = 2f;
@@ -178,7 +178,7 @@ public class CatenariaEnhanced : MonoBehaviour
         {
             rb.isKinematic = false;
             //rb.useGravity = true;
-            rb.AddForce(Physics.gravity * gravityForceModifier, ForceMode.Acceleration); 
+            rb.AddForce(Physics.gravity * gravityForceModifier*2, ForceMode.Acceleration); 
             rb.linearDamping = drag;            
             rb.angularDamping = angularDrag;
 
@@ -469,13 +469,13 @@ public class CatenariaEnhanced : MonoBehaviour
             cubos.Clear();
         }
     }
-    public void ResetCatenaria()
+    /*public void ResetCatenaria()
     {
         StopAllCoroutines();
         StartCoroutine(ResetCatenariaRoutine());
-    }
+    }*/
 
-    private IEnumerator ResetCatenariaRoutine()
+    /*private IEnumerator ResetCatenariaRoutine()
     {
         Debug.LogWarning("ResetCatenariaRoutine: Starting reset...");
 
@@ -502,5 +502,183 @@ public class CatenariaEnhanced : MonoBehaviour
         yield return new WaitForSeconds(0.1f);
 
         PostReset();
+    }*/
+    
+    public void ResetCatenaria()
+    {
+        StopAllCoroutines();
+        StartCoroutine(ResetCatenariaRoutine());
     }
+
+    /*private IEnumerator ResetCatenariaRoutine()
+    {
+        Debug.LogWarning("ResetCatenariaRoutine: Starting reset...");
+
+        // Step 0: Prep
+        if (animacionBTN != null)
+            animacionBTN.interactable = true;
+
+        fisicasArtificialesApagables = false;
+
+        // Step 1: Apply upward force
+        foreach (var rb in cubos)
+        {
+            if (rb != null)
+            {
+                Vector3 randomDirection = Vector3.up * 1.0f; // Base upward force
+
+                // Add slight randomness in X and Z directions
+                float randomX = Random.Range(-0.5f, 0.5f);
+                float randomZ = Random.Range(-0.5f, 0.5f);
+
+                randomDirection += new Vector3(randomX, 0f, randomZ); // Combined vector
+                randomDirection.Normalize(); // Optional: keep magnitude consistent
+
+                float forceMagnitude = Random.Range(1f, 3f); // Playful variable strength
+                rb.AddTorque(Random.onUnitSphere * Random.Range(0.5f, 2f), ForceMode.Impulse);
+
+                rb.AddForce(randomDirection * forceMagnitude, ForceMode.Impulse);
+            }
+        }
+
+
+        yield return new WaitForSeconds(0.5f); // Let them fly a bit
+
+        // Step 2: Rotate respaldar (use hinge spring)
+        if (respaldar != null)
+        {
+            HingeJoint hinge = respaldar.GetComponent<HingeJoint>();
+            if (hinge != null)
+            {
+                Debug.Log("Rotating respaldar using hinge...");
+                yield return LayDownRespaldar(hinge, targetAngle: 0f);  // 0 = lay down
+            }
+            else
+            {
+                Debug.LogWarning("Respaldar has no hinge!");
+            }
+        }
+
+        // Step 3: Destroy old cubes (they're detached and flying now)
+        foreach (var rb in cubos)
+        {
+            if (rb != null)
+            {
+                Destroy(rb.gameObject);
+            }
+        }
+        cubos.Clear();
+        currentGO = null;
+
+        yield return new WaitForSeconds(0.1f); // Let Unity process Destroy()
+
+        // Step 4: Reset all objects from exhibition
+        if (exhibicionScript != null)
+        {
+            Debug.Log("Calling ResetExhibicion");
+            exhibicionScript.ResetExhibicion();
+        }
+
+        // Step 5: Let new objects instantiate
+        yield return new WaitForSeconds(0.2f); // Tune this if instantiation takes longer
+
+        // Step 6: Finalize with PostReset
+        PostReset();
+    }*/
+
+    private IEnumerator ResetCatenariaRoutine()
+    {
+        Debug.LogWarning("ResetCatenariaRoutine: Starting reset...");
+
+        if (animacionBTN != null)
+            animacionBTN.interactable = true;
+
+        fisicasArtificialesApagables = false;
+
+        // Make sure cubes are non-kinematic so they can fly
+        foreach (var rb in cubos)
+        {
+            if (rb != null)
+            {
+                rb.isKinematic = false;
+                rb.useGravity = true;
+
+                // Apply playful force: up + random direction
+                Vector3 playfulDirection = (Vector3.up * 5f) + new Vector3(
+                    Random.Range(-1f, 1f),
+                    0f,
+                    Random.Range(-1f, 1f)
+                ) * 2f;
+                rb.AddForce(playfulDirection, ForceMode.Impulse);
+            }
+        }
+
+        // Wait a short time to allow the cubes to "fly"
+        yield return new WaitForSeconds(0.5f);
+
+        // Animate the respaldar going down
+        if (respaldar != null)
+        {
+            HingeJoint hinge = respaldar.GetComponent<HingeJoint>();
+            if (hinge != null)
+            {
+                Debug.Log("Rotating respaldar using hinge...");
+                yield return LayDownRespaldar(hinge, targetAngle: 0f);  // 0 = lay down
+            }
+            else
+            {
+                Debug.LogWarning("Respaldar has no hinge!");
+            }
+        }
+
+        // Destroy old cubes
+        foreach (var rb in cubos)
+        {
+            if (rb != null)
+                Destroy(rb.gameObject);
+        }
+        cubos.Clear();
+        currentGO = null;
+
+        // Reset the exhibition (which reinstantiates new objects)
+        if (exhibicionScript != null)
+            exhibicionScript.ResetExhibicion();
+
+        // Wait a couple frames + small delay to ensure stability
+        yield return null;
+        yield return null;
+        yield return new WaitForSeconds(0.1f);
+
+        PostReset();
+    }
+
+    private IEnumerator LayDownRespaldar(HingeJoint hinge, float targetAngle = 0f, float speed = 500f)
+    {
+        if (hinge == null) yield break;
+
+        JointSpring spring = hinge.spring;
+        spring.spring = speed;
+        spring.damper = 10f;
+        spring.targetPosition = targetAngle;
+        hinge.spring = spring;
+        hinge.useSpring = true;
+
+        Debug.Log("Applying spring to move respaldar toward " + targetAngle);
+
+        // Wait until it gets close enough
+        while (Mathf.Abs(hinge.angle - targetAngle) > 1f)
+        {
+            yield return null;
+        }
+
+        // Optional: Wait a short buffer to ensure it's settled
+        yield return new WaitForSeconds(0.3f);
+
+        // 🔧 Turn off spring to allow free movement
+        hinge.useSpring = false;
+
+        Debug.Log("Respaldar reached target and spring disabled.");
+    }
+
+
 }

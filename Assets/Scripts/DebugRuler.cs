@@ -25,12 +25,26 @@ public class DebugRuler : MonoBehaviour
     {
         if (debugText != null)
         {
-            string salida = GetVFXProperties();
+            string salida = DescribeTransform();
 
 
             //string pelotaInfo = GetPelotaInfo();
             debugText.text = salida;
         }
+    }
+
+    public string DescribeTransform()
+    {
+
+        Transform t = objects[0].transform;
+
+        return $"Object: {this.name}\n" +
+               $"Position: {t.position}\n" +
+               $"Rotation (Euler): {t.rotation.eulerAngles}\n" +
+               $"Rotation: {t.rotation}\n" +
+               $"Rotation (LocalEuler): {t.localRotation.eulerAngles}\n" +
+               $"Rotation: {t.localRotation}\n" +
+               $"Scale: {t.localScale}";
     }
 
     private string GetVFXProperties()
