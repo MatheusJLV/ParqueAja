@@ -3,6 +3,7 @@ using UnityEngine;
 using TMPro;
 using System.Collections;
 using UnityEngine.UI;
+using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
 public class CatenariaEnhanced : MonoBehaviour
 {
@@ -67,11 +68,13 @@ public class CatenariaEnhanced : MonoBehaviour
     }
     public void ActualizarCubos()
     {
+        Debug.LogWarning("En metodo: ActualizarCubos");
         cubos.Clear();
 
         if (currentGO == null)
         {
             Debug.LogWarning("No currentGO assigned. Cannot update cubos list.");
+            PostReset();
             return;
         }
 
@@ -126,6 +129,7 @@ public class CatenariaEnhanced : MonoBehaviour
 
     public void BeginDropSequence()
     {
+        Debug.LogWarning("En metodo: BeginDropSequence");
         animacionBTN.interactable = false; // Disable button to prevent multiple clicks
         if (currentGO != null)
             StartCoroutine(DropSequenceRoutine(currentGO));
@@ -133,6 +137,7 @@ public class CatenariaEnhanced : MonoBehaviour
 
     private IEnumerator DropSequenceRoutine(GameObject currentGO)
     {
+        Debug.LogWarning("En corutina: DropSequenceRoutine");
         originalPosition = currentGO.transform.position;
         originalRotation = currentGO.transform.rotation;
 
@@ -261,6 +266,7 @@ public class CatenariaEnhanced : MonoBehaviour
 
     private IEnumerator ResetPositionRoutine()
     {
+        Debug.LogWarning("En corutina: ResetPositionRoutine");
         Debug.Log($"Resetting position. Current count: {cubos.Count} cubos.");
         yield return new WaitForSeconds(1.5f);
 
@@ -350,6 +356,7 @@ public class CatenariaEnhanced : MonoBehaviour
 
     public void ReactivatePhysics()
     {
+        Debug.LogWarning("En metodo: ReactivatePhysics");
         if (currentGO == null || !fisicasArtificialesApagables) return;
 
         foreach (var rb in cubos)
@@ -375,6 +382,7 @@ public class CatenariaEnhanced : MonoBehaviour
 
     IEnumerator ApplyCustomGravity(Rigidbody rb, float duration, float intensity = 1f)
     {
+        Debug.LogWarning("En corutina: ApplyCustomGravity");
         float timer = 0f;
         while (timer < duration)
         {
@@ -389,6 +397,7 @@ public class CatenariaEnhanced : MonoBehaviour
 
     private IEnumerator MoveOverTime(Transform t, Vector3 from, Vector3 to, float duration)
     {
+        Debug.LogWarning("En corutina: MoveOverTime");
         float elapsed = 0f;
         while (elapsed < duration)
         {
@@ -401,6 +410,7 @@ public class CatenariaEnhanced : MonoBehaviour
 
     private IEnumerator RotateOverTime(Transform t, Vector3 axis, float angle, float duration)
     {
+        Debug.LogWarning("En corutina: RotateOverTime");
         float elapsed = 0f;
         float currentAngle = 0f;
 
@@ -421,6 +431,88 @@ public class CatenariaEnhanced : MonoBehaviour
 
             elapsed += Time.deltaTime;
             yield return null;
+        }
+    }
+
+    public void PostReset()
+    {
+        Transform found = transform.Find("Cubos catenaria(Clone)");
+
+        if (found != null)
+        {
+            currentGO = found.gameObject;
+            Debug.Log("PostReset: "+ found.name+" assigned to currentGO.");
+            ActualizarCubos();
+            Debug.Log("Se actualizaron los cubos, ahora se traran los listeners");
+            // Add XRGrabInteractable listener to call ReactivatePhysics on grab
+            foreach (Rigidbody rb in cubos)
+            {
+                if (rb == null) continue;
+
+                XRGrabInteractable grab = rb.GetComponent<XRGrabInteractable>();
+                if (grab != null)
+                {
+                    grab.selectEntered.RemoveAllListeners(); // optional safety
+                    grab.selectEntered.AddListener(_ => ReactivatePhysics());
+                    Debug.Log($"Listener added to: {grab.gameObject.name}");
+                }
+                else
+                {
+                    Debug.LogWarning($"GrabInteractable missing on: {rb.gameObject.name}");
+                }
+            }
+        }
+        else
+        {
+            Debug.LogWarning("PostReset: 'Cubos catenaria' not found under this object.");
+            currentGO = null;
+            cubos.Clear();
+        }
+    }
+    public void ResetCatenaria()
+    {
+        StopAllCoroutines(); // Stop all running coroutines to ensure clean state
+        StartCoroutine(ResetCatenariaRoutine());
+    }
+
+    private IEnumerator ResetCatenariaRoutine()
+    {
+        Debug.LogWarning("ResetCatenariaRoutine: Starting reset...");
+
+        // Reset the animation button just in case it's left disabled
+        if (animacionBTN != null)
+            animacionBTN.interactable = true;
+
+        // Reset internal flags
+        fisicasArtificialesApagables = false;
+        currentGO = null;
+        cubos.Clear();
+
+        // Run the exhibition reset
+        if (exhibicionScript == null)
+        {
+            Debug.LogError("ResetCatenariaRoutine: exhibicionScript is not assigned.");
+            yield break;
+        }
+
+        exhibicionScript.ResetExhibicion();
+
+        // Wait a few frames to allow the instantiation and parenting to settle
+        yield return null;
+        yield return null;
+        yield return new WaitForSeconds(0.1f); // Extra precaution
+
+        // Now run PostReset to re-link references and listeners
+        PostReset();
+
+        // Verify that PostReset actually set currentGO
+        if (currentGO == null)
+        {
+            Debug.LogError("ResetCatenariaRoutine: PostReset failed to assign currentGO.");
+        }
+        else
+        {
+            Debug.Log("ResetCatenariaRoutine: Catenaria reset complete.");
         }
     }
 

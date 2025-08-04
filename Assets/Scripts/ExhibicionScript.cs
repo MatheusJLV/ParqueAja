@@ -101,7 +101,9 @@ public class ExhibicionScript : MonoBehaviour
                 {
                     GameObject instance = Instantiate(prefab, storedPositions[index], storedRotations[index]);
                     instance.transform.localScale *= escala; // Scale the instance by the specified scale factor
+                    instance.transform.SetParent(this.transform); 
                     objetosContenidos.Add(instance);
+                    Debug.Log("Object  instanciado: " + instance.name);
                     index++;
                 }
             }
@@ -116,7 +118,9 @@ public class ExhibicionScript : MonoBehaviour
                 {
                     GameObject parentInstance = Instantiate(parentPrefab, storedPositionsParents[i], storedRotationsParents[i]);
                     parentInstance.transform.localScale *= escala; // Scale the instance by the specified scale factor
+                    parentInstance.transform.SetParent(this.transform); // <- Add this line
                     objetosContenidosParents.Add(parentInstance);
+                    Debug.Log("Parent  instanciado: " + parentInstance.name);
                 }
             }
         }
