@@ -131,6 +131,7 @@ public class CatenariaEnhanced : MonoBehaviour
     {
         Debug.LogWarning("En metodo: BeginDropSequence");
         animacionBTN.interactable = false; // Disable button to prevent multiple clicks
+        StopAllCoroutines();
         if (currentGO != null)
             StartCoroutine(DropSequenceRoutine(currentGO));
     }
@@ -445,7 +446,7 @@ public class CatenariaEnhanced : MonoBehaviour
             ActualizarCubos();
             Debug.Log("Se actualizaron los cubos, ahora se traran los listeners");
             // Add XRGrabInteractable listener to call ReactivatePhysics on grab
-            foreach (Rigidbody rb in cubos)
+            /*foreach (Rigidbody rb in cubos)
             {
                 if (rb == null) continue;
 
@@ -460,7 +461,8 @@ public class CatenariaEnhanced : MonoBehaviour
                 {
                     Debug.LogWarning($"GrabInteractable missing on: {rb.gameObject.name}");
                 }
-            }
+            }*/
+            SetListenersCubos();
         }
         else
         {
@@ -680,5 +682,82 @@ public class CatenariaEnhanced : MonoBehaviour
         Debug.Log("Respaldar reached target and spring disabled.");
     }
 
+    public void ForceResetPhysics()
+    {
+        Debug.LogWarning("ForceResetPhysics: Aborting all coroutines and restoring default physics");
+
+        StopAllCoroutines();
+
+        if (animacionBTN != null)
+            animacionBTN.interactable = true;
+
+        fisicasArtificialesApagables = false;
+
+        if (currentGO == null)
+        {
+            Debug.LogWarning("ForceResetPhysics: currentGO is null. Cannot reparent or reset.");
+            return;
+        }
+
+        // Detach all rigidbodies (cubos) from parent
+        List<Transform> detachedTransforms = new List<Transform>();
+        foreach (var rb in cubos)
+        {
+            if (rb != null && rb.transform.parent == currentGO.transform)
+            {
+                detachedTransforms.Add(rb.transform);
+                rb.transform.SetParent(null, true); // Detach from currentGO
+            }
+        }
+
+        // Reset parent transform
+        currentGO.transform.SetPositionAndRotation(originalPosition, originalRotation);
+
+        foreach (var rb in cubos)
+        {
+            if (rb == null) continue;
+
+            // Ensure it's a child of currentGO
+            if (rb.transform.parent != currentGO.transform)
+            {
+                Debug.LogWarning($"ForceResetPhysics: Reparenting {rb.gameObject.name}");
+                rb.transform.SetParent(currentGO.transform, true);
+            }
+
+            // Reset physics
+            rb.isKinematic = false;
+            rb.useGravity = true;
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            rb.linearDamping = 0f;
+            rb.angularDamping = 0.05f;
+        }
+
+        Debug.Log($"ForceResetPhysics: Completed for {cubos.Count} rigidbodies.");
+    }
+
+    public void SetListenersCubos()
+    {
+        foreach (Rigidbody rb in cubos)
+        {
+            if (rb == null) continue;
+
+            XRGrabInteractable grab = rb.GetComponent<XRGrabInteractable>();
+            if (grab != null)
+            {
+                // Optional: Remove previous listeners to avoid duplicates
+                grab.selectExited.RemoveAllListeners();
+
+                // Add listener to call ForceResetPhysics when grab is released
+                grab.selectExited.AddListener(_ => ForceResetPhysics());
+
+                Debug.Log($"Listener added to selectExited of: {grab.gameObject.name}");
+            }
+            else
+            {
+                Debug.LogWarning($"XRGrabInteractable missing on: {rb.gameObject.name}");
+            }
+        }
+    }
 
 }
