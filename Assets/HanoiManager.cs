@@ -110,7 +110,7 @@ public class HanoiManager : MonoBehaviour
 
     private IEnumerator SwapDonutToLowerSocket(GameObject donut, List<XRSocketInteractor> stack, XRSocketInteractor targetSocket)
     {
-        yield return null; // Wait one frame to allow existing interactions to settle
+        yield return null; // allow any current interactions to settle this frame
 
         IXRSelectInteractable interactable = donut.GetComponent<IXRSelectInteractable>();
         if (interactable == null)
@@ -119,28 +119,186 @@ public class HanoiManager : MonoBehaviour
             yield break;
         }
 
-        // Detach from current (top) socket
-        XRSocketInteractor currentTopSocket = stack[6];
+        // 1) Detach from current (top) socket
+        XRSocketInteractor currentTopSocket = stack[stack.Count - 1];
         var manager = currentTopSocket.interactionManager;
         if (manager != null)
         {
             manager.SelectExit(currentTopSocket, interactable);
         }
 
-        // Move donut to target socket's position
-        donut.transform.position = targetSocket.transform.position;
-        donut.transform.rotation = targetSocket.transform.rotation;
+        // 2) Stop physics immediately and clear velocities
+        Rigidbody rb = donut.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            // Make kinematic to prevent physics from moving the object while we snap it
+            rb.isKinematic = true;
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
 
-        // Force attach to new lower socket
+        // 3) Optionally disable the target socket collider to avoid any collision response
+        Collider targetCollider = null;
+        bool disabledTargetCollider = false;
+        if (targetSocket != null)
+        {
+            targetCollider = targetSocket.GetComponent<Collider>();
+            if (targetCollider != null)
+            {
+                targetCollider.enabled = false;
+                disabledTargetCollider = true;
+            }
+        }
+
+        // 4) Position/rotate the donut to the socket's attach transform if present (more precise)
+        Transform attach = targetSocket.attachTransform != null ? targetSocket.attachTransform : targetSocket.transform;
+        donut.transform.SetPositionAndRotation(attach.position, attach.rotation);
+
+        // Wait a fixed update so physics state updates cleanly before selecting
+        yield return new WaitForFixedUpdate();
+
+        // 5) Force attach to new lower socket via interaction manager
         if (manager != null)
         {
             manager.SelectEnter(targetSocket, interactable);
         }
 
-        // Let the system find the next available socket and assign it as new top
+        // Wait a frame so the XR system finalizes attachment
+        yield return null;
+
+        // 6) Re-enable the target collider (if we disabled it)
+        if (disabledTargetCollider && targetCollider != null)
+        {
+            // Wait one more fixed update to avoid immediate re-collision
+            yield return new WaitForFixedUpdate();
+            targetCollider.enabled = true;
+        }
+
+        // 7) Keep it kinematic while seated in socket (recommended) OR
+        //     set it dynamic if you prefer stacked objects to be simulated.
+        if (rb != null)
+        {
+            // Keep kinematic while in a socket so it doesn't jitter
+            rb.isKinematic = true;
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+
+        // 8) Refresh stack state and grabbability
         EnableOnlyTopSocket(stack);
+        UpdateGrabbableState(stack);
 
         Debug.Log($"Donut moved to {targetSocket.name}. Stack updated.");
-
     }
+
+
+    private void UpdateGrabbableState(List<XRSocketInteractor> stack)
+    {
+        bool topmostFound = false;
+
+        // From top (6) to bottom (0)
+        for (int i = stack.Count - 1; i >= 0; i--)
+        {
+            XRSocketInteractor socket = stack[i];
+            if (socket.hasSelection)
+            {
+                var interactable = socket.GetOldestInteractableSelected();
+
+                if (interactable is XRGrabInteractable grab)
+                {
+                    // Allow grabbing only the topmost donut
+                    grab.interactionLayers = topmostFound
+                        ? InteractionLayerMask.GetMask("") // NOT interactable
+                        : InteractionLayerMask.GetMask("Default"); // Interactable
+
+                    topmostFound = true;
+                    Debug.Log($"{grab.name} -> Layer: {grab.interactionLayers}, Selected: {grab.isSelected}, isKinematic: {grab.GetComponent<Rigidbody>().isKinematic}");
+
+                }
+            }
+        }
+    }
+
+    public void ExitAttempt(GameObject donut)
+    {
+        Debug.Log($"ExitAttempt: {donut.name} attempting to exit.");
+
+        if (stackA.Exists(s => s.hasSelection && s.GetOldestInteractableSelected()?.transform?.gameObject == donut))
+        {
+            PopTopDonut(stackA);
+        }
+        else if (stackB.Exists(s => s.hasSelection && s.GetOldestInteractableSelected()?.transform?.gameObject == donut))
+        {
+            PopTopDonut(stackB);
+        }
+        else if (stackC.Exists(s => s.hasSelection && s.GetOldestInteractableSelected()?.transform?.gameObject == donut))
+        {
+            PopTopDonut(stackC);
+        }
+        else
+        {
+            Debug.LogWarning($"ExitAttempt: {donut.name} was not found in any stack.");
+        }
+    }
+
+
+    public void PopTopDonut(List<XRSocketInteractor> stack)
+    {
+        for (int i = stack.Count - 1; i >= 0; i--)
+        {
+            var socket = stack[i];
+            if (socket.hasSelection)
+            {
+                IXRSelectInteractable interactable = socket.GetOldestInteractableSelected();
+                if (interactable is XRGrabInteractable grab)
+                {
+                    Rigidbody rb = grab.GetComponent<Rigidbody>();
+                    if (rb != null)
+                    {
+                        // Get top socket (which may block the exit path)
+                        XRSocketInteractor topSocket = stack[stack.Count - 1];
+
+                        // Start popping sequence with controlled delay
+                        StartCoroutine(DelayedPop(rb, socket, interactable, topSocket, stack));
+                    }
+                    break;
+                }
+            }
+        }
+    }
+    private IEnumerator DelayedPop(Rigidbody rb, XRSocketInteractor fromSocket, IXRSelectInteractable interactable, XRSocketInteractor topSocket, List<XRSocketInteractor> stack)
+    {
+        // 1. Disable top socket to clear path
+        topSocket.enabled = false;
+
+        // 2. Wait a short moment to ensure it deactivates before applying force
+        yield return new WaitForSeconds(0.1f);
+
+        // 3. Force exit from current socket
+        if (fromSocket.interactionManager != null)
+        {
+            fromSocket.interactionManager.SelectExit(fromSocket, interactable);
+        }
+
+        // 4. Make sure physics is ready
+        rb.isKinematic = false;
+
+        // 5. Apply popping force
+        Vector3 popDirection = Vector3.up * 6f + Random.insideUnitSphere * 1.5f;
+        rb.AddForce(popDirection, ForceMode.Impulse);
+
+        // 6. Re-enable top socket after full delay
+        yield return new WaitForSeconds(1.2f);
+        topSocket.enabled = true;
+
+        // 7. Refresh the stack (in case structure changed)
+        EnableOnlyTopSocket(stack);
+
+        yield return new WaitForSeconds(1.2f);
+
+        UpdateGrabbableState(stack);
+    }
+
 }
+
+//Hasta aqui esta decente. 
