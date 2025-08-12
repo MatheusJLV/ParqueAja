@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
+using System.Linq;
 
 public class HanoiManager : MonoBehaviour
 {
@@ -83,10 +84,29 @@ public class HanoiManager : MonoBehaviour
         IXRSelectInteractable interactable = args.interactableObject;
         GameObject donut = interactable.transform.gameObject;
 
+        // Validate move
+        if (!IsValidMove(donut, stack))
+        {
+            // Cancel placement
+            if (args.interactorObject is XRSocketInteractor socket && socket.interactionManager != null)
+            {
+                socket.interactionManager.SelectExit(socket, interactable);
+            }
+
+            // Optionally push donut back up a bit
+            Rigidbody rb = donut.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.isKinematic = false;
+                rb.AddForce(Vector3.up * 3f, ForceMode.Impulse);
+            }
+
+            return;
+        }
+
         Debug.Log($"Top socket received {donut.name}, looking for lower slot...");
 
         XRSocketInteractor targetSlot = GetNextAvailableSlotBelow(stack);
-
         if (targetSlot != null)
         {
             StartCoroutine(SwapDonutToLowerSocket(donut, stack, targetSlot));
@@ -96,6 +116,7 @@ public class HanoiManager : MonoBehaviour
             Debug.LogWarning("No available lower slot found.");
         }
     }
+
 
     private XRSocketInteractor GetNextAvailableSlotBelow(List<XRSocketInteractor> stack)
     {
@@ -299,6 +320,68 @@ public class HanoiManager : MonoBehaviour
         UpdateGrabbableState(stack);
     }
 
+    private int ExtractNumberFromName(string name)
+    {
+        string numberStr = "";
+        foreach (char c in name)
+        {
+            if (char.IsDigit(c))
+                numberStr += c;
+        }
+
+        if (int.TryParse(numberStr, out int value))
+        {
+            Debug.Log("ExtractNumberFromName: " + name + " -> " + value);
+            return value;
+        }
+
+        Debug.LogWarning("ExtractNumberFromName: No number found in name: " + name);
+        return -1; // No valid number
+    }
+
+    private bool IsValidMove(GameObject incomingDonut, List<XRSocketInteractor> stack)
+    {
+        int incomingValue = ExtractNumberFromName(incomingDonut.name);
+        if (incomingValue == -1)
+        {
+            Debug.LogWarning("IsValidMove: Could not determine size for " + incomingDonut.name + ", allowing move.");
+            return true; // Fail-safe
+        }
+
+        Debug.Log("IsValidMove: Checking if " + incomingDonut.name + " (size " + incomingValue + ") can be placed on this stack...");
+
+        // Look for the first occupied socket starting from the bottom, not including the one holding the incoming donut
+        for (int i = 0; i < stack.Count; i++)
+        {
+            if (stack[i].hasSelection)
+            {
+                GameObject topDonut = stack[i].GetOldestInteractableSelected().transform.gameObject;
+
+                // Ignore the incoming donut itself
+                if (topDonut == incomingDonut)
+                    continue;
+
+                int topValue = ExtractNumberFromName(topDonut.name);
+                Debug.Log("IsValidMove: Top donut in stack is " + topDonut.name + " (size " + topValue + ")");
+
+                if (topValue != -1 && incomingValue > topValue)
+                {
+                    Debug.Log("Invalid move: " + incomingDonut.name + " (size " + incomingValue + ") is larger than " + topDonut.name + " (size " + topValue + ")");
+                    return false;
+                }
+                else
+                {
+                    Debug.Log("Valid move: " + incomingDonut.name + " can be placed on top of " + topDonut.name);
+                }
+
+                break; // Found the first real donut to compare against
+            }
+        }
+
+        Debug.Log("Valid move: " + incomingDonut.name + " can be placed on an empty stack.");
+        return true;
+    }
+
+
 }
 
-//Hasta aqui esta decente. 
