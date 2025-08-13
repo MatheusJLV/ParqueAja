@@ -12,6 +12,7 @@ public class HanoiManager : MonoBehaviour
     public List<XRSocketInteractor> stackA = new List<XRSocketInteractor>();
     public List<XRSocketInteractor> stackB = new List<XRSocketInteractor>();
     public List<XRSocketInteractor> stackC = new List<XRSocketInteractor>();
+    private bool skipPlacementCheck = false;
 
     private void Start()
     {
@@ -81,6 +82,13 @@ public class HanoiManager : MonoBehaviour
 
     private void OnTopSocketReceived(SelectEnterEventArgs args, List<XRSocketInteractor> stack)
     {
+        if (skipPlacementCheck)
+        {
+            Debug.Log("OnTopSocketReceived skipped due to forced move.");
+            skipPlacementCheck = false; // reset flag
+            return;
+        }
+
         IXRSelectInteractable interactable = args.interactableObject;
         GameObject donut = interactable.transform.gameObject;
 
@@ -246,21 +254,22 @@ public class HanoiManager : MonoBehaviour
 
         if (stackA.Exists(s => s.hasSelection && s.GetOldestInteractableSelected()?.transform?.gameObject == donut))
         {
-            PopTopDonut(stackA);
+            StartCoroutine(MoveDonutToTopAndPop(donut, stackA));
         }
         else if (stackB.Exists(s => s.hasSelection && s.GetOldestInteractableSelected()?.transform?.gameObject == donut))
         {
-            PopTopDonut(stackB);
+            StartCoroutine(MoveDonutToTopAndPop(donut, stackB));
         }
         else if (stackC.Exists(s => s.hasSelection && s.GetOldestInteractableSelected()?.transform?.gameObject == donut))
         {
-            PopTopDonut(stackC);
+            StartCoroutine(MoveDonutToTopAndPop(donut, stackC));
         }
         else
         {
             Debug.LogWarning($"ExitAttempt: {donut.name} was not found in any stack.");
         }
     }
+
 
 
     public void PopTopDonut(List<XRSocketInteractor> stack)
@@ -382,6 +391,87 @@ public class HanoiManager : MonoBehaviour
         return true;
     }
 
+    private IEnumerator MoveDonutToTopAndPop(GameObject donut, List<XRSocketInteractor> stack)
+    {
+        XRSocketInteractor topSocket = stack[stack.Count - 1];
+
+        IXRSelectInteractable interactable = donut.GetComponent<IXRSelectInteractable>();
+        if (interactable == null) yield break;
+
+        // Step 1: Force exit from current socket
+        var currentSocket = stack.FirstOrDefault(s => s.hasSelection && s.GetOldestInteractableSelected() == interactable);
+        if (currentSocket != null && currentSocket.interactionManager != null)
+        {
+            currentSocket.interactionManager.SelectExit(currentSocket, interactable);
+        }
+
+        // Step 2: Snap to top socket without triggering placement logic
+        skipPlacementCheck = true;
+        Rigidbody rb = donut.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.isKinematic = true;
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+        Transform attach = topSocket.attachTransform != null ? topSocket.attachTransform : topSocket.transform;
+        donut.transform.SetPositionAndRotation(attach.position, attach.rotation);
+
+        yield return null;
+
+        if (topSocket.interactionManager != null)
+        {
+            topSocket.interactionManager.SelectEnter(topSocket, interactable);
+        }
+
+        yield return null;
+
+        // Step 3: Pop from the tip
+        PopTopDonut(stack);
+    }
+
+    public void PopAllPieces()
+    {
+        Debug.Log("PopAllPieces: Sequentially popping all stacks...");
+        StartCoroutine(PopAllPiecesRoutine());
+    }
+
+    private IEnumerator PopAllPiecesRoutine()
+    {
+        yield return StartCoroutine(PopAllFromStack(stackA));
+        yield return StartCoroutine(PopAllFromStack(stackB));
+        yield return StartCoroutine(PopAllFromStack(stackC));
+
+        Debug.Log("PopAllPieces: All stacks cleared.");
+    }
+
+    private IEnumerator PopAllFromStack(List<XRSocketInteractor> stack)
+    {
+        Debug.Log("Popping all donuts from stack (top down, moving each to top before launch)...");
+
+        while (stack.Any(s => s != null && s.hasSelection))
+        {
+            // Find the topmost occupied slot
+            for (int i = stack.Count - 1; i >= 0; i--)
+            {
+                XRSocketInteractor socket = stack[i];
+                if (socket != null && socket.hasSelection)
+                {
+                    IXRSelectInteractable interactable = socket.GetOldestInteractableSelected();
+                    if (interactable != null)
+                    {
+                        GameObject donut = interactable.transform.gameObject;
+                        // Move donut to topmost slot, then pop it using existing logic
+                        yield return StartCoroutine(MoveDonutToTopAndPop(donut, stack));
+
+                        yield return new WaitForSeconds(1f);
+                    }
+                    break; // break inner loop, then recheck stack
+                }
+            }
+
+            yield return new WaitForSeconds(0.05f); // small gap between pops
+        }
+    }
 
 }
-
