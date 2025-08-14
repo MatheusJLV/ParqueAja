@@ -296,11 +296,7 @@ public class HanoiManager : MonoBehaviour
             }
         }
     }
-    private IEnumerator DelayedPop(
-    Rigidbody rb,
-    XRSocketInteractor fromSocket,
-    IXRSelectInteractable interactable,
-    XRSocketInteractor topSocket,
+    private IEnumerator DelayedPop(Rigidbody rb,XRSocketInteractor fromSocket,IXRSelectInteractable interactable,XRSocketInteractor topSocket,
     List<XRSocketInteractor> stack)
     {
         // 1. Disable top socket to clear path
@@ -491,5 +487,82 @@ public class HanoiManager : MonoBehaviour
             yield return new WaitForSeconds(0.05f); // small gap between pops
         }
     }
+
+    [Header("Exhibition Setup")]
+    public Transform piezasParent; // Assign Piezas in Inspector
+
+    public void SetupExhibition()
+    {
+        StartCoroutine(SetupExhibitionRoutine());
+    }
+
+    private IEnumerator SetupExhibitionRoutine()
+    {
+        // Step 1: Pop everything first
+        yield return StartCoroutine(PopAllPiecesRoutine());
+
+        Debug.Log("SetupExhibition: All stacks cleared, preparing to arrange donuts...");
+
+        // Step 2: Get donuts from piezasParent
+        List<GameObject> donuts = new List<GameObject>();
+        foreach (Transform child in piezasParent)
+        {
+            if (child.GetComponent<XRGrabInteractable>())
+            {
+                donuts.Add(child.gameObject);
+            }
+        }
+
+        // Step 3: Sort by size (name number)
+        donuts.Sort((a, b) => ExtractNumberFromName(b.name).CompareTo(ExtractNumberFromName(a.name)));
+        // ^ Sorting largest (biggest number) first so it goes to bottom
+        /*
+        // Step 4: Place each donut into stackA
+        foreach (GameObject donut in donuts)
+        {
+            XRSocketInteractor targetSlot = GetNextAvailableSlotBelow(stackA);
+            if (targetSlot != null)
+            {
+                Debug.Log($"Placing {donut.name} into {targetSlot.name}...");
+                yield return StartCoroutine(SwapDonutToLowerSocket(donut, stackA, targetSlot));
+                yield return new WaitForSeconds(0.5f); // small delay to settle
+            }
+            else
+            {
+                Debug.LogWarning($"No slot available in stackA for {donut.name}");
+            }
+        }
+
+        Debug.Log("SetupExhibition: Completed stacking in first tower.");*/
+
+        // Step 4: Place donuts into the top socket so normal flow takes over
+        foreach (GameObject donut in donuts)
+        {
+            XRSocketInteractor topSocket = stackA[stackA.Count - 1]; // top is always last
+            Debug.Log($"Placing {donut.name} into top socket {topSocket.name}...");
+
+            // Snap to top socket
+            Rigidbody rb = donut.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.isKinematic = true;
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
+
+            Transform attach = topSocket.attachTransform != null ? topSocket.attachTransform : topSocket.transform;
+            donut.transform.SetPositionAndRotation(attach.position, attach.rotation);
+
+            // Force-select it so OnTopSocketReceived triggers
+            if (topSocket.interactionManager != null)
+            {
+                var interactable = donut.GetComponent<IXRSelectInteractable>();
+                topSocket.interactionManager.SelectEnter(topSocket, interactable);
+            }
+
+            yield return new WaitForSeconds(0.5f); // give time for natural drop flow
+        }
+    }
+
 
 }
