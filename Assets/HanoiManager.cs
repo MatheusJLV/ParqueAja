@@ -296,7 +296,12 @@ public class HanoiManager : MonoBehaviour
             }
         }
     }
-    private IEnumerator DelayedPop(Rigidbody rb, XRSocketInteractor fromSocket, IXRSelectInteractable interactable, XRSocketInteractor topSocket, List<XRSocketInteractor> stack)
+    private IEnumerator DelayedPop(
+    Rigidbody rb,
+    XRSocketInteractor fromSocket,
+    IXRSelectInteractable interactable,
+    XRSocketInteractor topSocket,
+    List<XRSocketInteractor> stack)
     {
         // 1. Disable top socket to clear path
         topSocket.enabled = false;
@@ -313,21 +318,29 @@ public class HanoiManager : MonoBehaviour
         // 4. Make sure physics is ready
         rb.isKinematic = false;
 
+        // (No grabability restore yet — we wait until the donut is clear)
+
         // 5. Apply popping force
         Vector3 popDirection = Vector3.up * 6f + Random.insideUnitSphere * 1.5f;
         rb.AddForce(popDirection, ForceMode.Impulse);
 
-        // 6. Re-enable top socket after full delay
-        yield return new WaitForSeconds(1.2f);
-        topSocket.enabled = true;
+        // 6. Wait so the donut clears the socket collider
+        yield return new WaitForSeconds(0.5f);
 
-        // 7. Refresh the stack (in case structure changed)
+        // 7. Now restore grabability
+        if (interactable is XRGrabInteractable grab)
+        {
+            grab.interactionLayers = InteractionLayerMask.GetMask("Default");
+        }
+
+        // 8. Refresh the stack (in case structure changed)
         EnableOnlyTopSocket(stack);
 
         yield return new WaitForSeconds(1.2f);
 
         UpdateGrabbableState(stack);
     }
+
 
     private int ExtractNumberFromName(string name)
     {
@@ -425,6 +438,11 @@ public class HanoiManager : MonoBehaviour
         }
 
         yield return null;
+
+        if (interactable is XRGrabInteractable grab)
+        {
+            grab.interactionLayers = InteractionLayerMask.GetMask("Default");
+        }
 
         // Step 3: Pop from the tip
         PopTopDonut(stack);
