@@ -16,11 +16,41 @@ public class CajaSimetria : MonoBehaviour
     public Transform referencia;
     public bool useGlobalSpace = true;
 
+    [Header("Auto-assign target by name")]
+    public string reflectGO;
+
     private Vector3 _lastPosition;
     private Quaternion _lastRotation;
 
     void Start()
     {
+        // Auto-assign target from reflectGO name
+        if (!string.IsNullOrEmpty(reflectGO))
+        {
+            GameObject foundTarget = GameObject.Find(reflectGO);
+            if (foundTarget != null)
+            {
+                target = foundTarget.transform;
+                Debug.Log($"CajaSimetria: Target set to {reflectGO}");
+            }
+            else
+            {
+                Debug.LogWarning($"CajaSimetria: No GameObject found with name '{reflectGO}'");
+            }
+        }
+
+        // Auto-assign referencia
+        GameObject foundReferencia = GameObject.Find("ref simetria camp sim");
+        if (foundReferencia != null)
+        {
+            referencia = foundReferencia.transform;
+            Debug.Log("CajaSimetria: Referencia set to 'ref simetria camp sim'");
+        }
+        else
+        {
+            Debug.LogWarning("CajaSimetria: No GameObject found named 'ref simetria camp sim'");
+        }
+
         _lastPosition = useGlobalSpace ? transform.position : transform.localPosition;
         _lastRotation = useGlobalSpace ? transform.rotation : transform.localRotation;
     }
@@ -80,106 +110,6 @@ public class CajaSimetria : MonoBehaviour
         }
 
     }
-
-    //second attempt (funcional, pero busquemos mejorar el rendimiento)
-
-    /*void Update()
-    {
-        if (target == null) return;
-
-        Vector3 currentPosition = useGlobalSpace ? transform.position : transform.localPosition;
-        Quaternion currentRotation = useGlobalSpace ? transform.rotation : transform.localRotation;
-
-        // Solo actualiza si la posición o rotación han cambiado
-        if (currentPosition != _lastPosition || currentRotation != _lastRotation)
-        {
-            // === POSITION ===
-            if (useGlobalSpace)
-            {
-                Vector3 center = referencia != null ? referencia.position : Vector3.zero;
-                Vector3 offset = transform.position - center;
-
-                Vector3 mirroredOffset = new Vector3(
-                    offset.x * xAxis,
-                    offset.y * yAxis,
-                    offset.z * zAxis
-                );
-
-                target.position = center + mirroredOffset;
-            }
-            else
-            {
-                Vector3 localPos = transform.localPosition;
-                target.localPosition = new Vector3(
-                    localPos.x * xAxis,
-                    localPos.y * yAxis,
-                    localPos.z * zAxis
-                );
-            }
-
-            // === ROTATION ===
-            if (mirrorRotation)
-            {
-                Quaternion sourceRotation = useGlobalSpace ? transform.rotation : transform.localRotation;
-                Quaternion mirroredRotation = MirrorRotationAcrossPlane(sourceRotation, rotationMirrorNormal.normalized);
-
-                if (useGlobalSpace)
-                    target.rotation = mirroredRotation;
-                else
-                    target.localRotation = mirroredRotation;
-            }
-
-            // Actualiza los valores almacenados
-            _lastPosition = currentPosition;
-            _lastRotation = currentRotation;
-        }
-    }*/
-
-
-    //first attempt
-
-    /*void Update()
-    {
-        if (target == null) return;
-
-        // === POSITION ===
-        if (useGlobalSpace)
-        {
-            Vector3 center = referencia != null ? referencia.position : Vector3.zero;
-            Vector3 offset = transform.position - center;
-
-            Vector3 mirroredOffset = new Vector3(
-                offset.x * xAxis,
-                offset.y * yAxis,
-                offset.z * zAxis
-            );
-
-            target.position = center + mirroredOffset;
-        }
-        else
-        {
-            Vector3 localPos = transform.localPosition;
-            target.localPosition = new Vector3(
-                localPos.x * xAxis,
-                localPos.y * yAxis,
-                localPos.z * zAxis
-            );
-        }
-
-        // === ROTATION ===
-        if (mirrorRotation)
-        {
-            Quaternion sourceRotation = useGlobalSpace ? transform.rotation : transform.localRotation;
-
-            // Reflect rotation across a plane defined by a normal
-            Quaternion mirroredRotation = MirrorRotationAcrossPlane(sourceRotation, rotationMirrorNormal.normalized);
-
-            if (useGlobalSpace)
-                target.rotation = mirroredRotation;
-            else
-                target.localRotation = mirroredRotation;
-        }
-    }*/
 
     // Mirrors a rotation across a plane (defined by its normal vector)
     Quaternion MirrorRotationAcrossPlane(Quaternion original, Vector3 planeNormal)
