@@ -20,19 +20,8 @@ public class LaserAttachFollower : MonoBehaviour
 
     private bool isGrabbed = false;
 
-
     private Coroutine followRoutine;
 
-    // Call this from HoverEnter event
-    /*public void StartFollowing()
-    {
-        if (followRoutine == null && nearFarInteractor != null && attachPoint != null)
-        {
-            followRoutine = StartCoroutine(FollowLaserHitPoint());
-        }
-    }*/
-
-    // Call this from HoverExit event
     public void StopFollowing()
     {
         if (followRoutine != null)
@@ -41,52 +30,6 @@ public class LaserAttachFollower : MonoBehaviour
             followRoutine = null;
         }
     }
-
-    /*private IEnumerator FollowLaserHitPoint()
-    {
-        while (true)
-        {
-            // Get laser origin and endpoint
-            Vector3 origin = nearFarInteractor.transform.position;
-
-            nearFarInteractor.TryGetCurveEndPoint(
-                out Vector3 end,
-                snapToSelectedAttachIfAvailable: false,
-                snapToSnapVolumeIfAvailable: false);
-
-            // Update attachPoint to follow the laser tip
-            attachPoint.position = end;
-
-            // Optional: orient attach grip to laser direction
-            Vector3 forward = (end - origin).normalized;
-            Vector3 up = Vector3.up;
-            Vector3 right = Vector3.Cross(up, forward).normalized;
-            up = Vector3.Cross(forward, right).normalized;
-            Quaternion rotation = Quaternion.LookRotation(forward, up);
-
-            attachPoint.rotation = rotation;
-
-            yield return null; // Wait one frame
-        }
-    }*/
-
-    private IEnumerator FollowControllerPointer(Transform controllerPointer)
-    {
-        while (true)
-        {
-            if (controllerPointer != null && attachPoint != null)
-            {
-                // Directly mirror the controllerPointer transform
-                attachPoint.position = controllerPointer.position;
-                attachPoint.rotation = controllerPointer.rotation;
-
-                Debug.Log($"[AttachFollower] Following controller pointer at {controllerPointer.position}");
-            }
-
-            yield return null; // Wait one frame
-        }
-    }
-
 
     private XRGrabInteractable grabInteractable;
 
@@ -119,100 +62,13 @@ public class LaserAttachFollower : MonoBehaviour
     private void OnSelectEntered(SelectEnterEventArgs args)
     {
         isGrabbed = true;
+        StopFollowing();
     }
 
     private void OnSelectExited(SelectExitEventArgs args)
     {
         isGrabbed = false;
     }
-
-
-    /*private void OnHoverEntered(HoverEnterEventArgs args)
-    {
-        var interactor = args.interactorObject as IXRInteractor;
-        string hand = interactor?.transform?.name ?? "Unknown";
-
-        string mode = "Unknown";
-
-        // Stop any previous follow routine
-        if (followRoutine != null)
-        {
-            StopCoroutine(followRoutine);
-            followRoutine = null;
-        }
-
-        if (interactor is NearFarInteractor nearFar)
-        {
-            var endPointType = nearFar.TryGetCurveEndPoint(
-                out Vector3 _,
-                snapToSelectedAttachIfAvailable: false,
-                snapToSnapVolumeIfAvailable: false
-            );
-
-            mode = endPointType switch
-            {
-                EndPointType.ValidCastHit => "Far (Laser)",
-                EndPointType.AttachPoint => "Near (Touch)",
-                EndPointType.None => "Near (Direct Range)",
-                _ => "Unknown"
-            };
-
-            if (mode == "Far (Laser)")
-            {
-                followRoutine = StartCoroutine(FollowLaserHitPoint());
-            }
-            else if (mode == "Near (Direct Range)" && controllerPointer != null)
-            {
-                followRoutine = StartCoroutine(FollowControllerPointer(controllerPointer));
-            }
-        }
-        else if (interactor is XRDirectInteractor)
-        {
-            mode = "Near (Direct Hand)";
-            if (controllerPointer != null)
-            {
-                followRoutine = StartCoroutine(FollowControllerPointer(controllerPointer));
-            }
-        }
-        else if (interactor is XRSocketInteractor)
-        {
-            mode = "Socket";
-        }
-
-        Debug.Log($"[HoverLogger] {gameObject.name} hovered by {hand} using {mode}");
-    }
-
-    private void OnHoverExited(HoverExitEventArgs args)
-    {
-        var interactor = args.interactorObject as IXRInteractor;
-        string hand = interactor?.transform?.name ?? "Unknown";
-        Debug.Log($"[HoverLogger] {gameObject.name} hover exited by {hand}");
-
-        StopFollowing();
-    }*/
-
-
-
-    /*private void OnHoverEntered(HoverEnterEventArgs args)
-    {
-        var interactor = args.interactorObject as IXRInteractor;
-
-        if (followRoutine != null)
-        {
-            StopCoroutine(followRoutine);
-            followRoutine = null;
-        }
-
-        followRoutine = StartCoroutine(FollowDynamic(interactor));
-
-        Debug.Log($"[HoverLogger] {gameObject.name} hovered by {interactor?.transform?.name}");
-    }
-
-    private void OnHoverExited(HoverExitEventArgs args)
-    {
-        StopFollowing();
-    }*/
-
 
     private void OnHoverEntered(HoverEnterEventArgs args)
     {
