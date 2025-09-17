@@ -182,18 +182,35 @@ public class MusicManagerScript : MonoBehaviour
     // Play a specific song by name
     public void PlaySongByName(string songName)
     {
-        int songIndex = musicClips.FindIndex(clip => clip.name == songName);
+        // 1) Try current list first
+        int songIndex = FindIndexByName(songName, musicClips);
         if (songIndex != -1)
         {
             currentTrackIndex = songIndex;
             PlayMusic();
+            return;
         }
-        else
+
+        // 2) Fallback: search across all lists
+        if (TryFindInAllLists(songName, out var clip, out var sourceList, out var idx))
         {
-            Debug.LogError("songName not found in PlaySongByName method of MusicManagerScript");
-            StartCoroutine(ResumeCurrentTrackAfterDelay(1f));
+            // Option A: just play the clip immediately without changing the active list
+            audioSource.clip = clip;
+            audioSource.Play();
+            playPauseCalled = false;
+
+            // Option B (optional): switch active list so NextSong follows that bank
+            // musicClips = new List<AudioClip>(sourceList);
+            // currentTrackIndex = idx;
+
+            return;
         }
+
+        // 3) Not found anywhere: log and resume current track after a small delay
+        Debug.LogError("songName not found in PlaySongByName: " + songName);
+        StartCoroutine(ResumeCurrentTrackAfterDelay(1f));
     }
+
 
     // Coroutine to resume the current track after a delay
     private IEnumerator ResumeCurrentTrackAfterDelay(float delay)
@@ -276,4 +293,42 @@ public class MusicManagerScript : MonoBehaviour
             PlayMusic();
         }
     }
+
+    // Case-insensitive, trimmed match against one list
+    private int FindIndexByName(string songName, List<AudioClip> list)
+    {
+        if (list == null) return -1;
+        string target = (songName ?? "").Trim();
+        for (int i = 0; i < list.Count; i++)
+        {
+            var clip = list[i];
+            if (clip == null) continue;
+            if (string.Equals(clip.name.Trim(), target, System.StringComparison.OrdinalIgnoreCase))
+                return i;
+        }
+        return -1;
+    }
+
+    // Search all lists in order; return the clip and the list it came from
+    private bool TryFindInAllLists(string songName, out AudioClip clip, out List<AudioClip> sourceList, out int index)
+    {
+        var banks = new List<List<AudioClip>> { Accion, Favoritas, Relax, Sass, DefaultList, musicClips };
+        foreach (var bank in banks)
+        {
+            int idx = FindIndexByName(songName, bank);
+            if (idx != -1)
+            {
+                clip = bank[idx];
+                sourceList = bank;
+                index = idx;
+                return true;
+            }
+        }
+        clip = null;
+        sourceList = null;
+        index = -1;
+        return false;
+    }
+
+
 }

@@ -14,13 +14,13 @@ public class VFXCarrier : MonoBehaviour
     [SerializeField] private ParticleSystem chidoriThinPS;   // optional
     [SerializeField] private ParticleSystem chidoriThickPS;  // optional
 
- 
+
     [Header("Orientation trigger")]
     [Tooltip("Local axis that represents the wand's pointing direction. Red arrow in the editor = +X.")]
-    [SerializeField] private Vector3 localPointAxis = Vector3.right; 
+    [SerializeField] private Vector3 localPointAxis = Vector3.right;
 
     [Tooltip("World direction the local axis should face to trigger. For 'X points UP', use Vector3.up.")]
-    [SerializeField] private Vector3 targetWorldDirection = Vector3.up; 
+    [SerializeField] private Vector3 targetWorldDirection = Vector3.up;
 
     [Tooltip("Total cone angle around the target direction considered 'inside'. 120° => 60° half-angle.")]
     [Range(1f, 179f)]
@@ -32,11 +32,13 @@ public class VFXCarrier : MonoBehaviour
     [Tooltip("Seconds between orientation checks.")]
     [SerializeField] private float checkInterval = 0.10f;
 
-    private float enterHalfAngle; 
-    private float exitHalfAngle;  
+    private float enterHalfAngle;
+    private float exitHalfAngle;
     private Coroutine watchRoutine;
 
     public WandPS wandPS; // reference to the WandPS script to check if it's active
+
+    [SerializeField] private AudioSource staticAS;
 
     private void Start()
     {
@@ -52,19 +54,30 @@ public class VFXCarrier : MonoBehaviour
         exitHalfAngle = enterHalfAngle + Mathf.Abs(hysteresis);
     }
 
-
     public void TurnOn()
     {
         isCharged = true;
         if (carrierVFX != null)
             carrierVFX.Play();
 
+        // audio: start static loop
+        if (staticAS != null)
+        {
+            staticAS.loop = true;
+            if (!staticAS.isPlaying) staticAS.Play();
+        }
+
         StartWatchingOrientation();
     }
+
 
     public void TurnOff()
     {
         isCharged = false;
+
+        // audio: stop static loop
+        if (staticAS != null && staticAS.isPlaying)
+            staticAS.Stop();
 
         intruder1 = null;
         if (carrierVFX != null)
@@ -76,6 +89,7 @@ public class VFXCarrier : MonoBehaviour
 
         StopWatchingOrientation();
     }
+
 
 
     public void Charge() => TurnOn();
@@ -171,7 +185,7 @@ public class VFXCarrier : MonoBehaviour
             if (armed && angToTarget <= enterHalfAngle)
             {
                 SwitchToChidoriNow();
-                yield break; 
+                yield break;
             }
 
 

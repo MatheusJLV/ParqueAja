@@ -34,6 +34,13 @@ public class WandPS : MonoBehaviour
     private Vector3 velSmoothed;
     private float cooldownTimer;
 
+    [SerializeField] private AudioSource chidoriAS;          // play once when Chidori starts
+    [SerializeField] private MusicManagerScript musicManager; // background music control
+    [SerializeField] private AudioSource staticAS;
+
+    [SerializeField] private float thrustDwellTime = 1.0f; // seconds to sustain thresholds
+    private float thrustDwellCounter = 0f;
+
     public void TurnOn()
     {
         if (thinPS && !thinPS.isPlaying) thinPS.Play(true);
@@ -42,9 +49,21 @@ public class WandPS : MonoBehaviour
         // Light: dim or turn off on activation
         if (lightManager)
         {
+            lightManager.SetDark_Mode2();
             float target = dimInsteadOfOff ? Mathf.Clamp01(dimIntensity) : 0f;
             TryLightSetIntensityOrToggle(target);
         }
+
+        if (chidoriAS != null)
+        {
+            if (chidoriAS.clip != null)
+                chidoriAS.PlayOneShot(chidoriAS.clip);
+            else
+                chidoriAS.Play(); // fallback if no clip specified for one-shot
+        }
+
+        if (musicManager != null)
+            musicManager.PlaySongByName("Naruto - Bad Situation");
 
         StartWatcher();
     }
@@ -54,9 +73,51 @@ public class WandPS : MonoBehaviour
         if (thinPS && thinPS.isPlaying) thinPS.Stop(true, ParticleSystemStopBehavior.StopEmitting);
         if (thickPS && thickPS.isPlaying) thickPS.Stop(true, ParticleSystemStopBehavior.StopEmitting);
 
+        if (chidoriAS != null && chidoriAS.isPlaying)
+            chidoriAS.Stop();
+
+        if (staticAS != null && staticAS.isPlaying)
+            staticAS.Stop();
+
+        if (musicManager != null)
+            musicManager.PlayRandomMusic();
+
         // Light: restore on deactivate
         if (lightManager)
         {
+            lightManager.SetBright_Mode2();
+            float target = Mathf.Clamp01(restoreIntensity);
+            TryLightSetIntensityOrToggle(target);
+        }
+
+        StopWatcher();
+    }
+
+    public void TurnOnFirst()
+    {
+        if (thinPS && !thinPS.isPlaying) thinPS.Play(true);
+        if (thickPS && !thickPS.isPlaying) thickPS.Play(true);
+
+        // Light: dim or turn off on activation
+        if (lightManager)
+        {
+            //lightManager.SetDark();
+            float target = dimInsteadOfOff ? Mathf.Clamp01(dimIntensity) : 0f;
+            TryLightSetIntensityOrToggle(target);
+        }
+
+        StartWatcher();
+    }
+
+    public void TurnOffFirst()
+    {
+        if (thinPS && thinPS.isPlaying) thinPS.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+        if (thickPS && thickPS.isPlaying) thickPS.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+
+        // Light: restore on deactivate
+        if (lightManager)
+        {
+            //lightManager.SetBright();
             float target = Mathf.Clamp01(restoreIntensity);
             TryLightSetIntensityOrToggle(target);
         }
@@ -71,7 +132,7 @@ public class WandPS : MonoBehaviour
 
     private void OnEnable()
     {
-        if (startOn) TurnOn();
+        if (startOn) TurnOnFirst();
     }
 
     private void OnDisable()
@@ -122,21 +183,25 @@ public class WandPS : MonoBehaviour
             bool passAxialSpeed = vAxialNeg >= axialVelocityThreshold;
             bool passAlignment = alignment >= minAlignment;
             bool passOverallSpeed = vMag >= velocityThreshold;
-
             bool passAwayFromHead = true;
-            if (head && awayFromHeadDotMin > 0f && vMag > 0.0001f)
+
+            // ... your away-from-head check here
+
+            if (passAxialSpeed && passAlignment && passOverallSpeed && passAwayFromHead)
             {
-                Vector3 fromHeadToWand = (transform.position - head.position).normalized;
-                float dot = Vector3.Dot(velSmoothed.normalized, fromHeadToWand);
-                passAwayFromHead = dot >= awayFromHeadDotMin;
+                thrustDwellCounter += sampleInterval;
+            }
+            else
+            {
+                thrustDwellCounter = 0f; // reset if not sustained
             }
 
-            if (cooldownTimer > 0f) cooldownTimer -= sampleInterval;
-
-            if (cooldownTimer <= 0f && passAxialSpeed && passAlignment && passOverallSpeed && passAwayFromHead)
+            // Trigger only if held long enough and cooldown expired
+            if (cooldownTimer <= 0f && thrustDwellCounter >= thrustDwellTime)
             {
                 TurnOff();
                 cooldownTimer = cooldown;
+                thrustDwellCounter = 0f;
             }
 
             yield return new WaitForSeconds(sampleInterval);
