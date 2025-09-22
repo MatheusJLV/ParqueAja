@@ -94,11 +94,12 @@ public class MusicManagerScript : MonoBehaviour
         }
     }
 
-    // Play the current track
+    // Play the current track (normal playlist mode: NO loop)
     public void PlayMusic()
     {
         if (musicClips.Count > 0)
         {
+            audioSource.loop = false;                //  ensure playlist tracks don't loop
             audioSource.clip = musicClips[currentTrackIndex];
             audioSource.Play();
             playPauseCalled = false;
@@ -180,6 +181,7 @@ public class MusicManagerScript : MonoBehaviour
     }
 
     // Play a specific song by name
+    // Play a specific song by name (FORCE LOOP)
     public void PlaySongByName(string songName)
     {
         // 1) Try current list first
@@ -187,30 +189,33 @@ public class MusicManagerScript : MonoBehaviour
         if (songIndex != -1)
         {
             currentTrackIndex = songIndex;
-            PlayMusic();
+            audioSource.loop = true;                //  repeat this specific song
+            audioSource.clip = musicClips[currentTrackIndex];
+            audioSource.Play();
+            playPauseCalled = false;
             return;
         }
 
         // 2) Fallback: search across all lists
         if (TryFindInAllLists(songName, out var clip, out var sourceList, out var idx))
         {
-            // Option A: just play the clip immediately without changing the active list
+            audioSource.loop = true;                //  repeat this specific song
             audioSource.clip = clip;
             audioSource.Play();
             playPauseCalled = false;
 
-            // Option B (optional): switch active list so NextSong follows that bank
+            // (Optional) switch active list if you want NextSong to follow that bank
             // musicClips = new List<AudioClip>(sourceList);
             // currentTrackIndex = idx;
-
             return;
         }
 
         // 3) Not found anywhere: log and resume current track after a small delay
         Debug.LogError("songName not found in PlaySongByName: " + songName);
-        StartCoroutine(ResumeCurrentTrackAfterDelay(1f));
+        StartCoroutine(ResumeCurrentTrackAfterDelay(1f)); // PlayMusic() will clear loop anyway
     }
 
+    public void DisableLoop() => audioSource.loop = false;
 
     // Coroutine to resume the current track after a delay
     private IEnumerator ResumeCurrentTrackAfterDelay(float delay)
