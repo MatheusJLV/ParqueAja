@@ -43,8 +43,12 @@ public class VFXPointerCustom : MonoBehaviour
     {
         Debug.Log($"[VFXPointerCustom] Asignando {other.gameObject.name} como intruder1.");
         intruder1 = other;
-        staticFieldVFX.SetBool("Atractor1", true);
-        staticFieldVFX.SetVector3("IntruderPosition", intruder1.transform.position);
+        if (staticFieldVFX == null)
+        {
+            staticFieldVFX.SetBool("Atractor1", true);
+            staticFieldVFX.SetVector3("IntruderPosition", intruder1.transform.position);
+        }
+        
         Debug.Log($"[VFXPointerCustom] VFX actualizado para {other.gameObject.name}.");
 
         if (arcoElectrico != null)
@@ -64,8 +68,11 @@ public class VFXPointerCustom : MonoBehaviour
 
     private void HandleIntruderExit(Collider other)
     {
-        staticFieldVFX.SetBool("Atractor1", false);
-        staticFieldVFX.SetVector3("IntruderPosition", Vector3.zero);
+        if (staticFieldVFX == null)
+        {
+            staticFieldVFX.SetBool("Atractor1", false);
+            staticFieldVFX.SetVector3("IntruderPosition", Vector3.zero);
+        }
         intruder1 = null;
 
         if (arcoElectrico != null)
@@ -102,6 +109,9 @@ public class VFXPointerCustom : MonoBehaviour
     void Update()
     {
         if (intruder1 != null)
-            staticFieldVFX.SetVector3("IntruderPosition", intruder1.transform.position);
+            if (staticFieldVFX == null)
+            {
+                staticFieldVFX.SetVector3("IntruderPosition", intruder1.transform.position);
+            }
     }
 }

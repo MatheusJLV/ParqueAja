@@ -145,34 +145,39 @@ public class HammiltonInmersivo : MonoBehaviour
 
     public void Salir()
     {
-        // Reset dodecaedro scale & position first
+        // 1) Restaurar cámara si estaba reducida
+        AumentarFOV();
+
+        // 2) Reset del dodecaedro
         dodecaedro.position = originalDodecaedroPosition;
         dodecaedro.rotation = originalDodecaedroRotation;
         dodecaedro.localScale = originalDodecaedroScale;
 
         followBall = false;
 
-        // Unparent just in case
         if (jugadorRig != null)
             jugadorRig.transform.SetParent(null);
 
-        // Re-enable control systems
         ActivarCharacterController();
         ActivarLocomocion();
         filtro?.DesactivarFiltroMuffled();
 
-        // Cleanup ball
         if (currentBallInstance != null)
             Destroy(currentBallInstance, 1f);
 
-        // Activate UI/objects again
         ActivarObjetos();
 
         playerDentro = false;
 
-        // Delay teleport to allow hierarchy to reset
         StartCoroutine(DelayedTeleport());
     }
+
+    // Red de seguridad: si el script se desactiva en mitad del ride, devolver cámara
+    void OnDisable()
+    {
+        if (fovReducido) AumentarFOV();
+    }
+
 
     private IEnumerator DelayedTeleport()
     {
