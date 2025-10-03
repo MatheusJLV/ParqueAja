@@ -1,4 +1,4 @@
-using System.Collections;
+/*using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -340,5 +340,144 @@ public class GiroscopioScript : MonoBehaviour
         return Mathf.Abs(rotacion.x) < 0.01f &&
                Mathf.Abs(rotacion.y) < 0.01f &&
                Mathf.Abs(rotacion.z) < 0.01f;
+    }
+}
+*/
+using System.Collections;
+using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.XR.Interaction.Toolkit.Locomotion.Teleportation;
+
+/// <summary>
+/// Giroscopio: Presiona Iniciar  teleporta al asiento  gira por "duracion"  desacelera libera al jugador.
+/// - Mantiene solo lo esencial. Sin validaciones complejas.
+/// - "velocidadMaxima" y "aceleracion" controlan la rampa.
+/// - "duracion" es el tiempo de crucero (sin contar rampas).
+/// - (Opcional) Slider para ajustar velocidad antes/durante.
+/// </summary>
+public class GiroscopioScript : MonoBehaviour
+{
+    [Header("Aros")]
+    public GameObject aroExterno;      // rota en X local
+    public GameObject aroInterno;      // rota en Z local
+
+    [Header("Teletransporte")]
+    public TeleportationAnchor asiento; // adentro del giroscopio
+    public TeleportationAnchor suelo;   // afuera para liberar
+    public GameObject asientoGO;        // padre al que se "sujeta" el rig mientras gira
+    public GameObject jugadorRig;       // XR Origin / XR Rig
+
+    [Header("UI (opcional)")]
+    public Button iniciarBtn;
+    public Slider velocidadSlider;      // si está asignado, controla velocidadMaxima
+
+    [Header("Parámetros")]
+    public float velocidadMaxima = 120f;   // grados/seg a crucero
+    public float aceleracion = 180f;       // grados/seg2 (rampa)
+    public float duracion = 10f;           // tiempo en segundos a velocidad de crucero
+    public float esperaEntrada = 0.35f;    // para dejar que el teletransporte se asiente
+    public float esperaSalida = 0.35f;     // (opcional) pausa antes de teletransportar afuera
+
+    private float _speedExterno, _speedInterno;
+    private Coroutine _runCo;
+
+    void Start()
+    {
+        if (iniciarBtn) iniciarBtn.onClick.AddListener(Iniciar);
+        if (velocidadSlider)
+        {
+            velocidadMaxima = velocidadSlider.value;
+            velocidadSlider.onValueChanged.AddListener(v => velocidadMaxima = v);
+        }
+    }
+
+    public void Iniciar()
+    {
+        if (_runCo != null) StopCoroutine(_runCo);
+        _runCo = StartCoroutine(Secuencia());
+    }
+
+    private IEnumerator Secuencia()
+    {
+        // 1) Entrar: teleporta al asiento y hace hijo del asiento
+        if (asiento) asiento.RequestTeleport();
+        if (jugadorRig && asientoGO) jugadorRig.transform.SetParent(asientoGO.transform, true);
+        yield return new WaitForSeconds(esperaEntrada);
+
+        // 2) Acelerar hasta velocidadMaxima
+        while ((_speedExterno < velocidadMaxima - 0.01f) || (_speedInterno < velocidadMaxima - 0.01f))
+        {
+            float delta = aceleracion * Time.deltaTime;
+            _speedExterno = Mathf.Min(_speedExterno + delta, velocidadMaxima);
+            _speedInterno = Mathf.Min(_speedInterno + delta, velocidadMaxima);
+            RotarPaso();
+            yield return null;
+        }
+
+        // 3) Mantener por 'duracion'
+        float t = 0f;
+        while (t < duracion)
+        {
+            t += Time.deltaTime;
+            RotarPaso();
+            yield return null;
+        }
+
+        // 4) Desacelerar a 0
+        while (_speedExterno > 0.01f || _speedInterno > 0.01f)
+        {
+            float delta = aceleracion * Time.deltaTime;
+            _speedExterno = Mathf.Max(_speedExterno - delta, 0f);
+            _speedInterno = Mathf.Max(_speedInterno - delta, 0f);
+            RotarPaso();
+            yield return null;
+        }
+
+        // 5) Ajuste suave de rotación a identidad (liberar lerps)
+        yield return StartCoroutine(ResetSuaveAIdentidad());
+
+        // 6) Liberar: quitar parent y teletransportar a suelo (si existe)
+        if (jugadorRig) jugadorRig.transform.SetParent(null, true);
+        yield return new WaitForSeconds(esperaSalida);
+        if (suelo) suelo.RequestTeleport();
+
+        _runCo = null;
+    }
+
+    private void RotarPaso()
+    {
+        if (aroExterno)
+            aroExterno.transform.Rotate(Vector3.right * _speedExterno * Time.deltaTime, Space.Self);
+        if (aroInterno)
+            aroInterno.transform.Rotate(Vector3.forward * _speedInterno * Time.deltaTime, Space.Self);
+    }
+
+    private IEnumerator ResetSuaveAIdentidad()
+    {
+        // Máx 2 s para "asentar" a rotación cero
+        float timeout = 2f;
+        float t = 0f;
+        var target = Quaternion.identity;
+
+        while (t < timeout &&
+               ((aroExterno && Quaternion.Angle(aroExterno.transform.localRotation, target) > 0.5f) ||
+                (aroInterno && Quaternion.Angle(aroInterno.transform.localRotation, target) > 0.5f)))
+        {
+            t += Time.deltaTime;
+            float step = aceleracion * Time.deltaTime; // usa "aceleracion" como ritmo de corrección
+
+            if (aroExterno)
+                aroExterno.transform.localRotation = Quaternion.RotateTowards(aroExterno.transform.localRotation, target, step);
+            if (aroInterno)
+                aroInterno.transform.localRotation = Quaternion.RotateTowards(aroInterno.transform.localRotation, target, step);
+
+            yield return null;
+        }
+    }
+
+    void OnDestroy()
+    {
+        if (iniciarBtn) iniciarBtn.onClick.RemoveListener(Iniciar);
+        if (velocidadSlider) velocidadSlider.onValueChanged.RemoveAllListeners();
     }
 }
