@@ -41,7 +41,10 @@ public class MusicManagerScript : MonoBehaviour
 
     private bool playPauseCalled = false; // Flag to indicate if PlayPause was called
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    [SerializeField]
+    private bool playMusicOnStart = true; // Si es true, reproduce música al iniciar
+
+
     void Start()
     {
         if (audioSource == null)
@@ -71,7 +74,7 @@ public class MusicManagerScript : MonoBehaviour
 
         LoadMusicClips(); // Load default music clips
 
-        if (musicClips.Count > 0)
+        if (playMusicOnStart && musicClips.Count > 0)
         {
             PlayRandomMusic();
         }
