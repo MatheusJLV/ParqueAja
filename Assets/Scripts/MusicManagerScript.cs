@@ -44,6 +44,7 @@ public class MusicManagerScript : MonoBehaviour
     [SerializeField]
     private bool playMusicOnStart = true; // Si es true, reproduce música al iniciar
 
+    private bool hasStartedPlayback = false;
 
     void Start()
     {
@@ -71,15 +72,18 @@ public class MusicManagerScript : MonoBehaviour
         {
             Debug.LogError("sliderObject is null in Start method of MusicManagerScript");
         }
-
-        LoadMusicClips(); // Load default music clips
+        LoadMusicClips();
 
         if (playMusicOnStart && musicClips.Count > 0)
         {
             PlayRandomMusic();
+            hasStartedPlayback = true;
+        }
+        else
+        {
+            hasStartedPlayback = false;
         }
 
-        // Start the coroutine to check the audio status
         StartCoroutine(CheckAudioStatus());
     }
 
@@ -88,43 +92,40 @@ public class MusicManagerScript : MonoBehaviour
     {
         while (true)
         {
-            yield return new WaitForSeconds(1f); // Check every second
+            yield return new WaitForSeconds(1f);
 
-            if (!audioSource.isPlaying && musicClips.Count > 0 && !playPauseCalled)
+            // Only auto-advance if playback has actually started before
+            if (hasStartedPlayback && !audioSource.isPlaying && musicClips.Count > 0 && !playPauseCalled)
             {
                 NextSong();
             }
         }
     }
 
+
     // Play the current track (normal playlist mode: NO loop)
     public void PlayMusic()
     {
         if (musicClips.Count > 0)
         {
-            audioSource.loop = false;                //  ensure playlist tracks don't loop
+            audioSource.loop = false;
             audioSource.clip = musicClips[currentTrackIndex];
             audioSource.Play();
             playPauseCalled = false;
+            hasStartedPlayback = true; // <-- mark started
         }
-        else
-        {
-            Debug.LogError("musicClips is empty in PlayMusic method of MusicManagerScript");
-        }
+        else Debug.LogError("musicClips is empty in PlayMusic");
     }
 
-    // Play a random track
     public void PlayRandomMusic()
     {
         if (musicClips.Count > 0)
         {
             currentTrackIndex = Random.Range(0, musicClips.Count);
             PlayMusic();
+            hasStartedPlayback = true; // redundant but explicit
         }
-        else
-        {
-            Debug.LogError("musicClips is empty in PlayRandomMusic method of MusicManagerScript");
-        }
+        else Debug.LogError("musicClips is empty in PlayRandomMusic");
     }
 
     // Pause the current track
@@ -202,10 +203,11 @@ public class MusicManagerScript : MonoBehaviour
         // 2) Fallback: search across all lists
         if (TryFindInAllLists(songName, out var clip, out var sourceList, out var idx))
         {
-            audioSource.loop = true;                //  repeat this specific song
+            audioSource.loop = true;
             audioSource.clip = clip;
             audioSource.Play();
             playPauseCalled = false;
+            hasStartedPlayback = true;
 
             // (Optional) switch active list if you want NextSong to follow that bank
             // musicClips = new List<AudioClip>(sourceList);
@@ -244,37 +246,16 @@ public class MusicManagerScript : MonoBehaviour
     public void LoadMusicClips()
     {
         string folderName = "Default";
-        if (dropdown != null)
-        {
-            folderName = dropdown.options[dropdown.value].text;
-        }
-        else
-        {
-            Debug.LogError("dropdown is null in LoadMusicClips method of MusicManagerScript");
-        }
+        if (dropdown != null) folderName = dropdown.options[dropdown.value].text;
+        else Debug.LogError("dropdown is null in LoadMusicClips method of MusicManagerScript");
 
         switch (folderName)
         {
-            case "Accion":
-                musicClips = new List<AudioClip>(Accion);
-                PlayRandomMusic();
-                break;
-            case "Favoritas":
-                musicClips = new List<AudioClip>(Favoritas);
-                PlayRandomMusic();
-                break;
-            case "Relax":
-                musicClips = new List<AudioClip>(Relax);
-                PlayRandomMusic();
-                break;
-            case "Sass":
-                musicClips = new List<AudioClip>(Sass);
-                PlayRandomMusic();
-                break;
-            case "Default":
-                musicClips = new List<AudioClip>(DefaultList);
-                PlayRandomMusic();
-                break;
+            case "Accion": musicClips = new List<AudioClip>(Accion); break;
+            case "Favoritas": musicClips = new List<AudioClip>(Favoritas); break;
+            case "Relax": musicClips = new List<AudioClip>(Relax); break;
+            case "Sass": musicClips = new List<AudioClip>(Sass); break;
+            case "Default": musicClips = new List<AudioClip>(DefaultList); break;
             default:
                 Debug.LogWarning("No matching music list found for: " + folderName);
                 musicClips.Clear();
@@ -282,9 +263,7 @@ public class MusicManagerScript : MonoBehaviour
         }
 
         if (musicClips.Count == 0)
-        {
             Debug.LogWarning("No valid music files found in the specified list.");
-        }
     }
 
     // Play or pause the music based on the current state
