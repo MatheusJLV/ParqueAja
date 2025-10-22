@@ -24,7 +24,7 @@ public class funnelScript : MonoBehaviour
     // Botones para ingresar y salir
     public Button iniciarBtn;
     public Button ingresarBtn;
-    public Button salirBtn;
+    //public Button salirBtn;
 
     private bool puedeIniciar = true;
     public float cooldownInicio = 0.5f; // segundos de cooldown antes de instanciar
@@ -64,6 +64,18 @@ public class funnelScript : MonoBehaviour
     public ContinuousTurnProvider turnProvider;
 
     public FiltroAudio filtro;
+
+
+    // Instead of destroying the container:
+    public void ResetBolas()
+    {
+        if (!pelotas2) return;
+        // Option A: immediate destroy
+        for (int i = pelotas2.transform.childCount - 1; i >= 0; i--)
+            Destroy(pelotas2.transform.GetChild(i).gameObject);
+
+        // Option B: pooling or delayed Destroy for perf, but same idea.
+    }
 
     public void DesactivarCharacterController()
     {
@@ -172,8 +184,8 @@ public class funnelScript : MonoBehaviour
             iniciarBtn.onClick.AddListener(Iniciar);
         if (ingresarBtn != null)
             ingresarBtn.onClick.AddListener(IngresarEIniciar);
-        if (salirBtn != null)
-            salirBtn.onClick.AddListener(Salir);
+        /*if (salirBtn != null)
+            salirBtn.onClick.AddListener(Salir);*/
 
         //GuardarEstado();
     }
@@ -340,16 +352,39 @@ public class funnelScript : MonoBehaviour
         }
     }*/
 
+    private static void StopAllAudioOnHierarchy(GameObject root)
+    {
+        if (root == null) return;
+
+        // Stop AudioSources on the root AND all children (even inactive ones)
+        var sources = root.GetComponentsInChildren<AudioSource>(includeInactive: true);
+        for (int i = 0; i < sources.Length; i++)
+        {
+            var src = sources[i];
+            if (src == null) continue;
+
+            // This stops both the looping clip and any PlayOneShot voices on that source
+            src.Stop();
+            src.volume = 0f; // belt-and-suspenders (optional)
+        }
+    }
+
     public void Finalizar(GameObject objeto)
     {
         if (objeto.CompareTag("canica"))
         {
-            var canicaFunel = objeto.GetComponent<CanicaFunnel>();
-            if (canicaFunel != null && canicaFunel.isPlayer)
+            // 1) Stop ALL audio on this ball (root + children) before destruction
+            StopAllAudioOnHierarchy(objeto);
+
+            // 2) If it's the player ball, run your recovery flow
+            var canicaFunnel = objeto.GetComponent<CanicaFunnel>();
+            if (canicaFunnel != null && canicaFunnel.isPlayer)
             {
                 StartCoroutine(SalirConRecuperacion());
             }
-            Destroy(objeto, 1f);
+
+            // 3) Destroy after a short delay (can be tiny now that audio is stopped)
+            Destroy(objeto, 0.1f); // previously 1f
         }
 
         if (objeto.CompareTag("MainCamera"))
