@@ -22,12 +22,50 @@ public class DodecaedroScript : MonoBehaviour
     [Header("Immersion UI")]
     public Button immersionUIButton;
 
+    //  simple audio plumbing for hook/unhook
+    [Header("Audio (Hook/Unhook)")]
+    public AudioClip hookClip;    // plays on OnPinInserted
+    public AudioClip unhookClip;  // plays on OnRemovePin
+    [Range(0f, 1f)] public float hookVolume = 1f;
+    [Range(0f, 1f)] public float unhookVolume = 1f;
+    [Tooltip("If null, we'll reuse/add an AudioSource on this GameObject.")]
+    public AudioSource audioSource;
+    [Tooltip("3D mix defaults if we autocreate an AudioSource.")]
+    [Range(0f, 1f)] public float spatialBlend = 1f;
+    public float minDistance = 0.35f;
+    public float maxDistance = 8f;
+
+    void Awake()
+    {
+        EnsureAudioSource();
+    }
+
+    private void EnsureAudioSource()
+    {
+        if (audioSource != null) return;
+
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+            audioSource = gameObject.AddComponent<AudioSource>();
+
+        audioSource.playOnAwake = false;
+        audioSource.loop = false;
+        audioSource.spatialBlend = spatialBlend;   // 3D by default
+        audioSource.minDistance = minDistance;
+        audioSource.maxDistance = maxDistance;
+    }
+
+    private void PlayOneShotSafe(AudioClip clip, float volume)
+    {
+        if (clip == null || audioSource == null) return;
+        audioSource.PlayOneShot(clip, Mathf.Clamp01(volume));
+    }
+    // 
+
     private void ValidateImmersionButton()
     {
         if (immersionUIButton != null)
-        {
             immersionUIButton.interactable = placedPins.Count > 1;
-        }
     }
 
     // Called by XRSocketInteractor's OnSelectEntered event
@@ -38,15 +76,16 @@ public class DodecaedroScript : MonoBehaviour
 
         AddPin(pin, anchor);
         ValidateImmersionButton();
+
+        // play hook sound
+        PlayOneShotSafe(hookClip, hookVolume);
     }
 
     public void AddPin(GameObject pin, Transform anchor)
     {
         // Reset material on previous
         if (placedPins.Last != null)
-        {
             SetMaterial(placedPins.Last.Value.pinObject, normalMaterial);
-        }
 
         PinData newPinData = new PinData(pin, anchor);
 
@@ -66,29 +105,29 @@ public class DodecaedroScript : MonoBehaviour
             newPinData.lineFromPrevious = line;
         }
 
-
         placedPins.AddLast(newPinData);
 
         // Highlight this pin
         SetMaterial(pin, lastPlacedMaterial);
-
-        // Optional: check for line crossings or other rules
-        // if (LineCrossesOthers(newPinData)) { UndoLastPin(); }
     }
 
     private void SetMaterial(GameObject pin, Material mat)
     {
         Renderer rend = pin.GetComponentInChildren<Renderer>();
-        if (rend != null)
-            rend.material = mat;
+        if (rend != null) rend.material = mat;
     }
 
+    // Called by XRSocketInteractors OnSelectExited event
     public void OnRemovePin(SelectExitEventArgs args)
     {
         GameObject pin = args.interactableObject.transform.gameObject;
-        SetMaterial(pin,normalMaterial);
-        RemovePin(pin); // Calls the existing logic
+        SetMaterial(pin, normalMaterial);
+        RemovePin(pin); // Calls existing logic
+
+        // play unhook sound
+        PlayOneShotSafe(unhookClip, unhookVolume);
     }
+
     public void RemovePin(GameObject pin)
     {
         LinkedListNode<PinData> node = placedPins.First;

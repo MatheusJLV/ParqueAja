@@ -15,6 +15,10 @@ public class ImpactAndSlideAudio : MonoBehaviour
     [Tooltip("Clip used for sliding (looped).")]
     public AudioClip slideClip;
 
+    [Header("External Audio Source (Optional)")]
+    [Tooltip("Optional external AudioSource to use for sliding instead of the local one.")]
+    public AudioSource externalAudioSource;
+
     [Header("Impact Settings")]
     public float minImpactForce = 0.15f;
     public float maxImpactForce = 3.0f;
@@ -35,9 +39,7 @@ public class ImpactAndSlideAudio : MonoBehaviour
     public float slidePitchRefSpeed = 0.6f;
 
     [Header("Feature Toggles")]
-    [Tooltip("Enable or disable impact sound playback.")]
     public bool allowImpactSound = true;
-    [Tooltip("Enable or disable sliding loop. Disabling it still allows impacts.")]
     public bool allowSlideSound = true;
 
     // Internal state
@@ -50,8 +52,9 @@ public class ImpactAndSlideAudio : MonoBehaviour
 
     private void Awake()
     {
-        // Create two sources for independent control
+        // Default setup (local AudioSources)
         AudioSource[] sources = GetComponents<AudioSource>();
+
         if (sources.Length < 2)
         {
             impactSource = gameObject.AddComponent<AudioSource>();
@@ -61,6 +64,12 @@ public class ImpactAndSlideAudio : MonoBehaviour
         {
             impactSource = sources[0];
             slideSource = sources[1];
+        }
+
+        // If an external source is provided, use it for the sliding channel
+        if (externalAudioSource != null)
+        {
+            slideSource = externalAudioSource;
         }
 
         // Configure impact source
@@ -76,22 +85,19 @@ public class ImpactAndSlideAudio : MonoBehaviour
 
     private void OnCollisionEnter(Collision c)
     {
-        if (!allowImpactSound) return;
-        if (impactClip == null) return;
+        if (!allowImpactSound || impactClip == null) return;
 
         float impact = c.relativeVelocity.magnitude;
         if (impact < minImpactForce) return;
 
         float now = Time.time;
-        if (now < nextImpactTime) return; // cooldown
+        if (now < nextImpactTime) return;
 
-        // Randomize pitch
         if (impactRandomizePitch)
             impactSource.pitch = 1f + Random.Range(-impactPitchVariance, impactPitchVariance);
         else
             impactSource.pitch = 1f;
 
-        // Volume based on force
         float vol = impactBaseVolume;
         if (impactScaleByForce)
         {
@@ -105,9 +111,7 @@ public class ImpactAndSlideAudio : MonoBehaviour
 
     private void OnCollisionStay(Collision c)
     {
-        // Sliding only valid if allowed AND impacts are allowed
-        if (!allowSlideSound || !allowImpactSound) return;
-        if (slideClip == null) return;
+        if (!allowSlideSound || !allowImpactSound || slideClip == null) return;
 
         Vector3 rel = c.relativeVelocity;
         Vector3 n = c.contacts[0].normal;

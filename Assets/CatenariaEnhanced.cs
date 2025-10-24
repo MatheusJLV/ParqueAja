@@ -49,6 +49,11 @@ public class CatenariaEnhanced : MonoBehaviour
 
     private bool fisicasArtificialesApagables = false;
 
+    private bool originalPoseCaptured = false;
+    private Vector3 originalLocalPosition;
+    private Quaternion originalLocalRotation;
+
+
     private void Start()
     {
         if (animacionBTN != null)
@@ -114,6 +119,18 @@ public class CatenariaEnhanced : MonoBehaviour
 
                 // Instantiate new prefab as child
                 currentGO = Instantiate(prefab, transform);
+
+                // 
+                if (currentGO != null && !originalPoseCaptured)
+                {
+                    originalPosition = currentGO.transform.position;        // world
+                    originalRotation = currentGO.transform.rotation;
+                    originalLocalPosition = currentGO.transform.localPosition;   // local
+                    originalLocalRotation = currentGO.transform.localRotation;
+                    originalPoseCaptured = true;
+                }
+
+
                 currentGO.name = prefab.name; // Clean name (optional)
                 currentGO.transform.localPosition = Vector3.zero; // Optional alignment
                 currentGO.transform.localRotation = Quaternion.identity;
@@ -134,55 +151,66 @@ public class CatenariaEnhanced : MonoBehaviour
     }
 
     private IEnumerator DropSequenceRoutine(GameObject currentGO)
+{
+    Debug.LogWarning("En corutina: DropSequenceRoutine");
+
+    // 0) Guard null BEFORE touching currentGO.transform
+    if (currentGO == null)
+        yield break;
+
+    // Keep a consistent reference used by ResetPositionRoutine()
+    this.currentGO = currentGO;
+
+    // 1) Capture origin ONCE per instantiation (world + local)
+    if (!originalPoseCaptured)
     {
-        Debug.LogWarning("En corutina: DropSequenceRoutine");
-        originalPosition = currentGO.transform.position;
-        originalRotation = currentGO.transform.rotation;
-
-        if (currentGO == null)
-            yield break;
-
-        this.currentGO = currentGO; // Ensure reference is consistent inside resetPosition()
-
-        // 1. Cache child rigidbodies
-        Rigidbody[] pieceRBs = cubos.ToArray();
-
-        // 2. Set all to kinematic
-        foreach (var rb in pieceRBs)
-        {
-            rb.useGravity = false;
-            rb.isKinematic = true;
-        }
-
-        // 3. Save original transform
-        originalPosition = currentGO.transform.position;
-        originalRotation = currentGO.transform.rotation;
-
-        // 4. Raise the group
-        Vector3 endPos = originalPosition + Vector3.up * liftHeight;
-        yield return MoveOverTime(currentGO.transform, originalPosition, endPos, liftDuration);
-
-        // 5. Rotate in Z
-        yield return RotateOverTime(currentGO.transform, Vector3.forward, rotateZDegrees, rotateZDuration);
-
-        // 6. Rotate in Y
-        yield return RotateOverTime(currentGO.transform, Vector3.down, rotateYDegrees, rotateYDuration);
-
-        // 7. Wait before drop
-        yield return new WaitForSeconds(dropDelay);
-
-        // 8. Set pieces to dynamic with adjusted physics
-        foreach (var rb in pieceRBs)
-        {
-            rb.isKinematic = false;
-            //rb.useGravity = true;
-            rb.AddForce(Physics.gravity * gravityForceModifier*2, ForceMode.Acceleration); 
-            rb.linearDamping = drag;            
-            rb.angularDamping = angularDrag;
-        }
-        // 9. Reset position (delayed)
-        yield return ResetPositionRoutine();
+        originalPosition      = currentGO.transform.position;       // world
+        originalRotation      = currentGO.transform.rotation;
+        originalLocalPosition = currentGO.transform.localPosition;  // local
+        originalLocalRotation = currentGO.transform.localRotation;
+        originalPoseCaptured  = true;
     }
+
+    // 2) Cache child rigidbodies (fall back to children if list is empty)
+    Rigidbody[] pieceRBs = cubos != null && cubos.Count > 0
+        ? cubos.ToArray()
+        : currentGO.GetComponentsInChildren<Rigidbody>(includeInactive: false);
+
+    // 3) Set all to kinematic
+    foreach (var rb in pieceRBs)
+    {
+        if (!rb) continue;
+        rb.useGravity = false;
+        rb.isKinematic = true;
+    }
+
+    // 4) Raise the group
+    Vector3 startPos = currentGO.transform.position; // use current (we already captured "original" once)
+    Vector3 endPos   = startPos + Vector3.up * liftHeight;
+    yield return MoveOverTime(currentGO.transform, startPos, endPos, liftDuration);
+
+    // 5) Rotate in Z
+    yield return RotateOverTime(currentGO.transform, Vector3.forward, rotateZDegrees, rotateZDuration);
+
+    // 6) Rotate in Y
+    yield return RotateOverTime(currentGO.transform, Vector3.down, rotateYDegrees, rotateYDuration);
+
+    // 7) Wait before drop
+    yield return new WaitForSeconds(dropDelay);
+
+    // 8) Set pieces to dynamic with adjusted physics
+    foreach (var rb in pieceRBs)
+    {
+        if (!rb) continue;
+        rb.isKinematic = false;
+        rb.AddForce(Physics.gravity * gravityForceModifier * 2f, ForceMode.Acceleration);
+        rb.linearDamping  = drag;
+        rb.angularDamping = angularDrag;
+    }
+
+    // 9) Reset position (delayed)
+    yield return ResetPositionRoutine();
+}
 
     private IEnumerator ResetPositionRoutine()
     {
@@ -329,6 +357,17 @@ public class CatenariaEnhanced : MonoBehaviour
         if (found != null)
         {
             currentGO = found.gameObject;
+
+            // 
+            if (currentGO != null && !originalPoseCaptured)
+            {
+                originalPosition = currentGO.transform.position;        // world
+                originalRotation = currentGO.transform.rotation;
+                originalLocalPosition = currentGO.transform.localPosition;   // local
+                originalLocalRotation = currentGO.transform.localRotation;
+                originalPoseCaptured = true;
+            }
+
             Debug.Log("PostReset: "+ found.name+" assigned to currentGO.");
             ActualizarCubos();
             Debug.Log("Se actualizaron los cubos, ahora se traran los listeners");

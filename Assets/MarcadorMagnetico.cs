@@ -2,8 +2,12 @@ using UnityEngine;
 
 public class MarcadorMagnetico : MonoBehaviour
 {
+    [Header("Magnetic Behavior")]
     public ParticleSystem particleSystemVar;
     public float pullStrength = 5f;
+
+    [Header("Audio")]
+    [SerializeField] private AudioSource impactAS;
 
     private ParticleSystem.Particle[] particles;
 
@@ -30,5 +34,16 @@ public class MarcadorMagnetico : MonoBehaviour
         }
 
         particleSystemVar.SetParticles(particles, count);
+    }
+
+    /// <summary>
+    /// Optional: automatically plays sound when something enters the magnetic trigger.
+    /// </summary>
+    private void OnTriggerEnter(Collider other)
+    {
+        if (impactAS != null && !impactAS.isPlaying)
+        {
+            impactAS.Play();
+        }
     }
 }

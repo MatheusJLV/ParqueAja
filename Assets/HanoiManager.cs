@@ -14,8 +14,49 @@ public class HanoiManager : MonoBehaviour
     public List<XRSocketInteractor> stackC = new List<XRSocketInteractor>();
     private bool skipPlacementCheck = false;
 
+    // ====== NEW: Audio for hook / unhook ======
+    [Header("Audio (Hook/Unhook)")]
+    [Tooltip("Played when a donut is accepted into the stack (hook).")]
+    public AudioClip hookClip;
+    [Tooltip("Played when a donut is rejected or popped (unhook).")]
+    public AudioClip unhookClip;
+    [Range(0f, 1f)] public float hookVolume = 1f;
+    [Range(0f, 1f)] public float unhookVolume = 1f;
+
+    [Tooltip("If not assigned, an AudioSource will be created on this GameObject.")]
+    public AudioSource audioSource;
+    [Range(0f, 1f)] public float spatialBlend = 1f; // 3D by default
+    public float minDistance = 0.35f;
+    public float maxDistance = 8f;
+
+    private void EnsureAudioSource()
+    {
+        if (audioSource != null) return;
+
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+            audioSource = gameObject.AddComponent<AudioSource>();
+
+        audioSource.playOnAwake = false;
+        audioSource.loop = false;
+        audioSource.spatialBlend = spatialBlend;
+        audioSource.minDistance = minDistance;
+        audioSource.maxDistance = maxDistance;
+    }
+
+    private void PlayOneShotSafe(AudioClip clip, float vol)
+    {
+        if (!clip) return;
+        EnsureAudioSource();
+        if (!audioSource) return;
+        audioSource.PlayOneShot(clip, Mathf.Clamp01(vol));
+    }
+    // ==========================================
+
     private void Start()
     {
+        EnsureAudioSource(); //make sure we have a source available
+
         EnableOnlyTopSocket(stackA);
         EnableOnlyTopSocket(stackB);
         EnableOnlyTopSocket(stackC);
@@ -70,14 +111,10 @@ public class HanoiManager : MonoBehaviour
         }
     }
 
-
-
     private void SetSocketsActive(List<XRSocketInteractor> stack, bool active)
     {
         foreach (var socket in stack)
-        {
             socket.enabled = active;
-        }
     }
 
     private void OnTopSocketReceived(SelectEnterEventArgs args, List<XRSocketInteractor> stack)
@@ -100,6 +137,9 @@ public class HanoiManager : MonoBehaviour
             {
                 socket.interactionManager.SelectExit(socket, interactable);
             }
+
+            // Play UNHOOK (rejection)
+            PlayOneShotSafe(unhookClip, unhookVolume); // 
 
             // Optionally push donut back up a bit
             Rigidbody rb = donut.GetComponent<Rigidbody>();
@@ -124,7 +164,6 @@ public class HanoiManager : MonoBehaviour
             Debug.LogWarning("No available lower slot found.");
         }
     }
-
 
     private XRSocketInteractor GetNextAvailableSlotBelow(List<XRSocketInteractor> stack)
     {
@@ -160,7 +199,6 @@ public class HanoiManager : MonoBehaviour
         Rigidbody rb = donut.GetComponent<Rigidbody>();
         if (rb != null)
         {
-            // Make kinematic to prevent physics from moving the object while we snap it
             rb.isKinematic = true;
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
@@ -192,6 +230,9 @@ public class HanoiManager : MonoBehaviour
             manager.SelectEnter(targetSocket, interactable);
         }
 
+        // play HOOK when the donut is successfully seated into the lower socket
+        PlayOneShotSafe(hookClip, hookVolume);
+
         // Wait a frame so the XR system finalizes attachment
         yield return null;
 
@@ -203,11 +244,9 @@ public class HanoiManager : MonoBehaviour
             targetCollider.enabled = true;
         }
 
-        // 7) Keep it kinematic while seated in socket (recommended) OR
-        //     set it dynamic if you prefer stacked objects to be simulated.
+        // 7) Keep it kinematic while seated in socket
         if (rb != null)
         {
-            // Keep kinematic while in a socket so it doesn't jitter
             rb.isKinematic = true;
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
@@ -219,7 +258,6 @@ public class HanoiManager : MonoBehaviour
 
         Debug.Log($"Donut moved to {targetSocket.name}. Stack updated.");
     }
-
 
     private void UpdateGrabbableState(List<XRSocketInteractor> stack)
     {
@@ -235,14 +273,12 @@ public class HanoiManager : MonoBehaviour
 
                 if (interactable is XRGrabInteractable grab)
                 {
-                    // Allow grabbing only the topmost donut
                     grab.interactionLayers = topmostFound
                         ? InteractionLayerMask.GetMask("") // NOT interactable
                         : InteractionLayerMask.GetMask("Default"); // Interactable
 
                     topmostFound = true;
                     Debug.Log($"{grab.name} -> Layer: {grab.interactionLayers}, Selected: {grab.isSelected}, isKinematic: {grab.GetComponent<Rigidbody>().isKinematic}");
-
                 }
             }
         }
@@ -270,8 +306,6 @@ public class HanoiManager : MonoBehaviour
         }
     }
 
-
-
     public void PopTopDonut(List<XRSocketInteractor> stack)
     {
         for (int i = stack.Count - 1; i >= 0; i--)
@@ -285,10 +319,8 @@ public class HanoiManager : MonoBehaviour
                     Rigidbody rb = grab.GetComponent<Rigidbody>();
                     if (rb != null)
                     {
-                        // Get top socket (which may block the exit path)
                         XRSocketInteractor topSocket = stack[stack.Count - 1];
 
-                        // Start popping sequence with controlled delay
                         StartCoroutine(DelayedPop(rb, socket, interactable, topSocket, stack));
                     }
                     break;
@@ -296,40 +328,35 @@ public class HanoiManager : MonoBehaviour
             }
         }
     }
-    private IEnumerator DelayedPop(Rigidbody rb,XRSocketInteractor fromSocket,IXRSelectInteractable interactable,XRSocketInteractor topSocket,
-    List<XRSocketInteractor> stack)
-    {
-        // 1. Disable top socket to clear path
-        topSocket.enabled = false;
 
-        // 2. Wait a short moment to ensure it deactivates before applying force
+    private IEnumerator DelayedPop(Rigidbody rb, XRSocketInteractor fromSocket, IXRSelectInteractable interactable, XRSocketInteractor topSocket,
+                                   List<XRSocketInteractor> stack)
+    {
+        topSocket.enabled = false;
         yield return new WaitForSeconds(0.1f);
 
-        // 3. Force exit from current socket
+        // Force exit from current socket
         if (fromSocket.interactionManager != null)
         {
             fromSocket.interactionManager.SelectExit(fromSocket, interactable);
         }
 
-        // 4. Make sure physics is ready
+        // NEW: play UNHOOK for pop
+        PlayOneShotSafe(unhookClip, unhookVolume);
+
         rb.isKinematic = false;
 
-        // (No grabability restore yet — we wait until the donut is clear)
-
-        // 5. Apply popping force
+        // Apply popping force
         Vector3 popDirection = Vector3.up * 6f + Random.insideUnitSphere * 1.5f;
         rb.AddForce(popDirection, ForceMode.Impulse);
 
-        // 6. Wait so the donut clears the socket collider
         yield return new WaitForSeconds(0.5f);
 
-        // 7. Now restore grabability
         if (interactable is XRGrabInteractable grab)
         {
             grab.interactionLayers = InteractionLayerMask.GetMask("Default");
         }
 
-        // 8. Refresh the stack (in case structure changed)
         EnableOnlyTopSocket(stack);
 
         yield return new WaitForSeconds(1.2f);
@@ -515,7 +542,7 @@ public class HanoiManager : MonoBehaviour
 
         // Step 3: Sort by size (name number)
         donuts.Sort((a, b) => ExtractNumberFromName(b.name).CompareTo(ExtractNumberFromName(a.name)));
-        // ^ Sorting largest (biggest number) first so it goes to bottom
+        //  Sorting largest (biggest number) first so it goes to bottom
         /*
         // Step 4: Place each donut into stackA
         foreach (GameObject donut in donuts)
