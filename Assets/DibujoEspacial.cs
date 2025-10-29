@@ -33,7 +33,7 @@ public class DibujoEspacial : MonoBehaviour
     private List<GameObject> drawnLines2 = new List<GameObject>();
 
     // Variables para flippear el espejo
-    public bool YBool = false;
+    public bool YBool = true;
     public bool ZBool = false;
     public GameObject espejo;
 
@@ -67,6 +67,8 @@ public class DibujoEspacial : MonoBehaviour
             colorSlider.onValueChanged.AddListener(OnColorSliderChanged);
         if (colorSlider2 != null)
             colorSlider2.onValueChanged.AddListener(OnColorSliderChanged2);
+
+        SetYBool(true);
 
     }
 

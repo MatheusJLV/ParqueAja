@@ -348,42 +348,49 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.XR.Interaction.Toolkit.Locomotion.Teleportation;
 
-/// <summary>
-/// Giroscopio: Presiona Iniciar  teleporta al asiento  gira por "duracion"  desacelera libera al jugador.
-/// - Mantiene solo lo esencial. Sin validaciones complejas.
-/// - "velocidadMaxima" y "aceleracion" controlan la rampa.
-/// - "duracion" es el tiempo de crucero (sin contar rampas).
-/// - (Opcional) Slider para ajustar velocidad antes/durante.
-/// </summary>
 public class GiroscopioScript : MonoBehaviour
 {
     [Header("Aros")]
-    public GameObject aroExterno;      // rota en X local
-    public GameObject aroInterno;      // rota en Z local
+    public GameObject aroExterno; // Outer ring
+    public GameObject aroInterno; // Inner ring
 
     [Header("Teletransporte")]
-    public TeleportationAnchor asiento; // adentro del giroscopio
-    public TeleportationAnchor suelo;   // afuera para liberar
-    public GameObject asientoGO;        // padre al que se "sujeta" el rig mientras gira
-    public GameObject jugadorRig;       // XR Origin / XR Rig
+    public TeleportationAnchor asiento;
+    public TeleportationAnchor suelo;
+    public GameObject asientoGO;
+    public GameObject jugadorRig;
 
     [Header("UI (opcional)")]
     public Button iniciarBtn;
-    public Slider velocidadSlider;      // si está asignado, controla velocidadMaxima
+    public Slider velocidadSlider;
 
-    [Header("Parámetros")]
-    public float velocidadMaxima = 120f;   // grados/seg a crucero
-    public float aceleracion = 180f;       // grados/seg2 (rampa)
-    public float duracion = 10f;           // tiempo en segundos a velocidad de crucero
-    public float esperaEntrada = 0.35f;    // para dejar que el teletransporte se asiente
-    public float esperaSalida = 0.35f;     // (opcional) pausa antes de teletransportar afuera
+    [Header("Movimiento")]
+    public float velocidadMaxima = 120f;
+    public float aceleracion = 180f;
+    public float duracion = 10f;
+    public float esperaEntrada = 0.35f;
+    public float esperaSalida = 0.35f;
+    public float graciaAntesDeArrancar = 0.25f;
+
+    [Header("Retorno a origen")]
+    public float settleSpeed = 180f;
+    public float settleEpsilon = 0.5f;
 
     private float _speedExterno, _speedInterno;
     private Coroutine _runCo;
+    private Coroutine _returnCo;
 
-    void Start()
+    private Quaternion _outerStartRot;
+    private Quaternion _innerStartRot;
+
+    private void Start()
     {
+        // Cache starting rotations
+        if (aroExterno) _outerStartRot = aroExterno.transform.localRotation;
+        if (aroInterno) _innerStartRot = aroInterno.transform.localRotation;
+
         if (iniciarBtn) iniciarBtn.onClick.AddListener(Iniciar);
+
         if (velocidadSlider)
         {
             velocidadMaxima = velocidadSlider.value;
@@ -394,90 +401,127 @@ public class GiroscopioScript : MonoBehaviour
     public void Iniciar()
     {
         if (_runCo != null) StopCoroutine(_runCo);
+        _speedExterno = 0f;
+        _speedInterno = 0f;
         _runCo = StartCoroutine(Secuencia());
     }
 
     private IEnumerator Secuencia()
     {
-        // 1) Entrar: teleporta al asiento y hace hijo del asiento
+        // 1) Teleport in and parent
         if (asiento) asiento.RequestTeleport();
         if (jugadorRig && asientoGO) jugadorRig.transform.SetParent(asientoGO.transform, true);
-        yield return new WaitForSeconds(esperaEntrada);
 
-        // 2) Acelerar hasta velocidadMaxima
-        while ((_speedExterno < velocidadMaxima - 0.01f) || (_speedInterno < velocidadMaxima - 0.01f))
-        {
-            float delta = aceleracion * Time.deltaTime;
-            _speedExterno = Mathf.Min(_speedExterno + delta, velocidadMaxima);
-            _speedInterno = Mathf.Min(_speedInterno + delta, velocidadMaxima);
-            RotarPaso();
-            yield return null;
-        }
+        yield return new WaitForSeconds(esperaEntrada + graciaAntesDeArrancar);
 
-        // 3) Mantener por 'duracion'
+        // 2) Accelerate
+        float rampUpTime = Mathf.Max(0.01f, velocidadMaxima / Mathf.Max(0.01f, aceleracion));
+        yield return RampSpeed(0f, velocidadMaxima, rampUpTime);
+
+        // 3) Maintain
         float t = 0f;
         while (t < duracion)
         {
             t += Time.deltaTime;
-            RotarPaso();
+            RotarPaso(_speedExterno, _speedInterno);
             yield return null;
         }
 
-        // 4) Desacelerar a 0
-        while (_speedExterno > 0.01f || _speedInterno > 0.01f)
-        {
-            float delta = aceleracion * Time.deltaTime;
-            _speedExterno = Mathf.Max(_speedExterno - delta, 0f);
-            _speedInterno = Mathf.Max(_speedInterno - delta, 0f);
-            RotarPaso();
-            yield return null;
-        }
+        // 4) Decelerate
+        yield return RampSpeed(velocidadMaxima, 0f, rampUpTime);
 
-        // 5) Ajuste suave de rotación a identidad (liberar lerps)
-        yield return StartCoroutine(ResetSuaveAIdentidad());
-
-        // 6) Liberar: quitar parent y teletransportar a suelo (si existe)
+        // 5) Exit
         if (jugadorRig) jugadorRig.transform.SetParent(null, true);
         yield return new WaitForSeconds(esperaSalida);
         if (suelo) suelo.RequestTeleport();
 
+        // 6) Return both rings to start rotation once the player leaves
+        StartReturnToOrigin();
+
         _runCo = null;
     }
 
-    private void RotarPaso()
+    private IEnumerator RampSpeed(float from, float to, float duration)
     {
-        if (aroExterno)
-            aroExterno.transform.Rotate(Vector3.right * _speedExterno * Time.deltaTime, Space.Self);
-        if (aroInterno)
-            aroInterno.transform.Rotate(Vector3.forward * _speedInterno * Time.deltaTime, Space.Self);
-    }
-
-    private IEnumerator ResetSuaveAIdentidad()
-    {
-        // Máx 2 s para "asentar" a rotación cero
-        float timeout = 2f;
-        float t = 0f;
-        var target = Quaternion.identity;
-
-        while (t < timeout &&
-               ((aroExterno && Quaternion.Angle(aroExterno.transform.localRotation, target) > 0.5f) ||
-                (aroInterno && Quaternion.Angle(aroInterno.transform.localRotation, target) > 0.5f)))
+        float start = Time.time;
+        while (true)
         {
-            t += Time.deltaTime;
-            float step = aceleracion * Time.deltaTime; // usa "aceleracion" como ritmo de corrección
+            float elapsed = Time.time - start;
+            float a = Mathf.Clamp01(elapsed / Mathf.Max(0.0001f, duration));
+            float k = Mathf.SmoothStep(0f, 1f, a);
+            float current = Mathf.Lerp(from, to, k);
 
-            if (aroExterno)
-                aroExterno.transform.localRotation = Quaternion.RotateTowards(aroExterno.transform.localRotation, target, step);
-            if (aroInterno)
-                aroInterno.transform.localRotation = Quaternion.RotateTowards(aroInterno.transform.localRotation, target, step);
+            _speedExterno = current;
+            _speedInterno = current;
 
+            RotarPaso(_speedExterno, _speedInterno);
+
+            if (a >= 1f) break;
             yield return null;
         }
     }
 
-    void OnDestroy()
+    private void RotarPaso(float velExternoDegPerSec, float velInternoDegPerSec)
     {
-        if (iniciarBtn) iniciarBtn.onClick.RemoveListener(Iniciar);
-        if (velocidadSlider) velocidadSlider.onValueChanged.RemoveAllListeners();
+        if (aroExterno)
+            aroExterno.transform.Rotate(Vector3.right * velExternoDegPerSec * Time.deltaTime, Space.Self);
+        if (aroInterno)
+            aroInterno.transform.Rotate(Vector3.forward * velInternoDegPerSec * Time.deltaTime, Space.Self);
+    }
+
+    // === NEW RETURN TO ORIGIN SECTION ===
+
+    public void StartReturnToOrigin()
+    {
+        if (_returnCo != null) StopCoroutine(_returnCo);
+        _returnCo = StartCoroutine(ReturnToStartRotation());
+    }
+
+    private IEnumerator ReturnToStartRotation()
+    {
+        if (!aroExterno && !aroInterno) yield break;
+
+        while (true)
+        {
+            bool done = true;
+
+            if (aroExterno)
+            {
+                var cur = aroExterno.transform.localRotation;
+                float ang = Quaternion.Angle(cur, _outerStartRot);
+                if (ang > settleEpsilon)
+                {
+                    done = false;
+                    float step = settleSpeed * Time.deltaTime;
+                    aroExterno.transform.localRotation =
+                        Quaternion.RotateTowards(cur, _outerStartRot, step);
+                }
+            }
+
+            if (aroInterno)
+            {
+                var cur = aroInterno.transform.localRotation;
+                float ang = Quaternion.Angle(cur, _innerStartRot);
+                if (ang > settleEpsilon)
+                {
+                    done = false;
+                    float step = settleSpeed * Time.deltaTime;
+                    aroInterno.transform.localRotation =
+                        Quaternion.RotateTowards(cur, _innerStartRot, step);
+                }
+            }
+
+            if (done) break;
+            yield return null;
+        }
+
+        _returnCo = null;
+    }
+
+    private void OnDisable()
+    {
+        if (_runCo != null) { StopCoroutine(_runCo); _runCo = null; }
+        if (_returnCo != null) { StopCoroutine(_returnCo); _returnCo = null; }
     }
 }
+

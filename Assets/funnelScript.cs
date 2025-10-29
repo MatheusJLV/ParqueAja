@@ -74,6 +74,11 @@ public class funnelScript : MonoBehaviour
         for (int i = pelotas2.transform.childCount - 1; i >= 0; i--)
             Destroy(pelotas2.transform.GetChild(i).gameObject);
 
+        if (!pelotas1) return;
+        // Option A: immediate destroy
+        for (int i = pelotas1.transform.childCount - 1; i >= 0; i--)
+            Destroy(pelotas1.transform.GetChild(i).gameObject);
+
         // Option B: pooling or delayed Destroy for perf, but same idea.
     }
 

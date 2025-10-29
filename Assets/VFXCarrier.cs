@@ -4,16 +4,13 @@ using UnityEngine.VFX;
 
 public class VFXCarrier : MonoBehaviour
 {
-
     public VisualEffect carrierVFX;
     private Collider intruder1;
     public bool isCharged = false;
 
-
     [Header("Chidori (target Particle Systems)")]
     [SerializeField] private ParticleSystem chidoriThinPS;   // optional
     [SerializeField] private ParticleSystem chidoriThickPS;  // optional
-
 
     [Header("Orientation trigger")]
     [Tooltip("Local axis that represents the wand's pointing direction. Red arrow in the editor = +X.")]
@@ -36,17 +33,23 @@ public class VFXCarrier : MonoBehaviour
     private float exitHalfAngle;
     private Coroutine watchRoutine;
 
-    public WandPS wandPS; // reference to the WandPS script to check if it's active
+    public WandPS wandPS; // reference to the WandPS script
 
     [SerializeField] private AudioSource staticAS;
 
+    [Header("Auto-off")]
+    [SerializeField] private bool enableAutoOff = true;
+    [SerializeField] private float chidoriAutoOffSeconds = 5f;
+    private Coroutine _autoOffCo;
+    private bool chidoriActive = false;
+
     private void Start()
     {
-
         if (carrierVFX != null)
         {
-            chidoriThickPS.Stop(true, ParticleSystemStopBehavior.StopEmitting);
-            chidoriThinPS.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+            // Ensure PS are stopped at boot (if used directly)
+            if (chidoriThickPS) chidoriThickPS.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+            if (chidoriThinPS) chidoriThinPS.Stop(true, ParticleSystemStopBehavior.StopEmitting);
             carrierVFX.Stop();
         }
 
@@ -70,30 +73,16 @@ public class VFXCarrier : MonoBehaviour
         StartWatchingOrientation();
     }
 
-
+    /// <summary>
+    /// Unified shutdown for both the carrier and Chidori.
+    /// </summary>
     public void TurnOff()
     {
-        isCharged = false;
-
-        // audio: stop static loop
-        if (staticAS != null && staticAS.isPlaying)
-            staticAS.Stop();
-
-        intruder1 = null;
-        if (carrierVFX != null)
-        {
-            carrierVFX.SetBool("Atractor1", false);
-            carrierVFX.SetVector3("IntruderPosition", Vector3.zero);
-            carrierVFX.Stop();
-        }
-
-        StopWatchingOrientation();
+        DisarmCarrier();
+        DeactivateChidori();
     }
 
-
-
     public void Charge() => TurnOn();
-
 
     public void Discharge(Collider other)
     {
@@ -124,7 +113,6 @@ public class VFXCarrier : MonoBehaviour
 
     void OnTriggerExit(Collider other)
     {
-
         if (other == intruder1)
         {
             intruder1 = null;
@@ -142,16 +130,96 @@ public class VFXCarrier : MonoBehaviour
             carrierVFX.SetVector3("IntruderPosition", intruder1.transform.position);
     }
 
-
+    /// <summary>
+    /// Called when aim is inside the cone: disarm carrier, enable Chidori, start auto-off timer.
+    /// </summary>
     public void SwitchToChidoriNow()
     {
-        //if (chidoriThinPS != null && !chidoriThinPS.isPlaying) chidoriThinPS.Play(true);
-        //if (chidoriThickPS != null && !chidoriThickPS.isPlaying) chidoriThickPS.Play(true);
+        // Disarm the carrier immediately (stop VFX/audio/watcher)
+        DisarmCarrier();
+
+        // Turn Chidori ON via WandPS (preferred)
         if (wandPS != null && wandPS.isActiveAndEnabled)
             wandPS.TurnOn();
+
+        // (Optional) If you want to directly play PS instead of WandPS:
+        // if (chidoriThinPS && !chidoriThinPS.isPlaying)  chidoriThinPS.Play(true);
+        // if (chidoriThickPS && !chidoriThickPS.isPlaying) chidoriThickPS.Play(true);
+
+        chidoriActive = true;
+
+        // Start auto-off if enabled
+        if (enableAutoOff)
+        {
+            if (_autoOffCo != null) StopCoroutine(_autoOffCo);
+            _autoOffCo = StartCoroutine(AutoOffAfterDelay());
+        }
+    }
+
+    // ===== Helpers (clean separation of responsibilities) =====
+
+    private void DisarmCarrier()
+    {
+        isCharged = false;
+
+        // audio: stop static loop
+        if (staticAS != null && staticAS.isPlaying)
+            staticAS.Stop();
+
+        intruder1 = null;
+        if (carrierVFX != null)
+        {
+            carrierVFX.SetBool("Atractor1", false);
+            carrierVFX.SetVector3("IntruderPosition", Vector3.zero);
+            carrierVFX.Stop();
+        }
+
+        StopWatchingOrientation();
+    }
+
+    private void DeactivateChidori()
+    {
+        // stop auto-off timer
+        if (_autoOffCo != null)
+        {
+            StopCoroutine(_autoOffCo);
+            _autoOffCo = null;
+        }
+
+        // Turn off via WandPS
+        if (wandPS != null && wandPS.isActiveAndEnabled)
+            wandPS.TurnOff();
+
+        // (Optional) Also ensure PS are stopped if used directly
+        if (chidoriThinPS) chidoriThinPS.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        if (chidoriThickPS) chidoriThickPS.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
+        chidoriActive = false;
+    }
+
+    private IEnumerator AutoOffAfterDelay()
+    {
+        float timeRemaining = chidoriAutoOffSeconds;
+
+        while (timeRemaining > 0f)
+        {
+            // If manually turned off, stop waiting
+            if (!chidoriActive)
+            {
+                _autoOffCo = null;
+                yield break;
+            }
+
+            timeRemaining -= Time.deltaTime;
+            yield return null;
+        }
+
+        _autoOffCo = null;
+        // Timer expired — shut everything down
         TurnOff();
     }
 
+    // ===== Orientation watcher =====
 
     private void StartWatchingOrientation()
     {
@@ -174,20 +242,15 @@ public class VFXCarrier : MonoBehaviour
 
         while (isActiveAndEnabled && isCharged)
         {
-
             Vector3 worldDir = transform.TransformDirection(localPointAxis).normalized;
-
-
             Vector3 tgt = targetWorldDirection.sqrMagnitude > 0f ? targetWorldDirection.normalized : Vector3.up;
             float angToTarget = Vector3.Angle(worldDir, tgt);
-
 
             if (armed && angToTarget <= enterHalfAngle)
             {
                 SwitchToChidoriNow();
                 yield break;
             }
-
 
             if (angToTarget > exitHalfAngle)
                 armed = true;
@@ -197,7 +260,6 @@ public class VFXCarrier : MonoBehaviour
     }
 
 #if UNITY_EDITOR
-
     private void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.red;
