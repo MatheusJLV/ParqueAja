@@ -72,8 +72,16 @@ public class SequentialSpotlightCrossfader : MonoBehaviour
     {
         if (loopRoutine != null) StopCoroutine(loopRoutine);
         if (globalFadeRoutine != null) StopCoroutine(globalFadeRoutine);
-        isFadingOut = true;
-        globalFadeRoutine = StartCoroutine(GlobalFade(globalFadeFactor, 0f, globalFadeOut));
+
+        // en vez de StartCoroutine(...) hacemos mute inmediato
+        foreach (var s in sources)
+        {
+            if (!s) continue;
+            s.volume = 0f;
+            s.Stop();
+        }
+
+        isFadingOut = false;
     }
 
     private IEnumerator SpotlightLoop()
