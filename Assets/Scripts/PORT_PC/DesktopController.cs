@@ -4,10 +4,10 @@ using UnityEngine;
 public class DesktopController : MonoBehaviour
 {
     [Header("Movimiento")]
-    public float walkSpeed = 6f;
-    public float sprintSpeed = 10f;
-    public float jumpHeight = 1.5f;
-    public float gravity = -9.81f;
+    public float walkSpeed = 8f;
+    public float sprintSpeed = 12f;
+    public float gravity = -12f;
+    public float jumpHeight = 1.8f;
     public float slopeForce = 6f; // fuerza que mantiene al jugador pegado a pendientes
     public float slopeRayLength = 1.5f;
 
