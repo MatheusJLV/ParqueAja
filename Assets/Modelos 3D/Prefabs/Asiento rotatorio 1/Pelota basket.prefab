@@ -46,6 +46,7 @@ GameObject:
   - component: {fileID: 121432050392484751}
   - component: {fileID: 281515372862965069}
   - component: {fileID: 6296901071408576498}
+  - component: {fileID: 3789459316122844236}
   m_Layer: 0
   m_Name: Pelota basket
   m_TagString: Untagged
@@ -280,7 +281,7 @@ MonoBehaviour:
   m_SmoothScaleAmount: 8
   m_TightenScale: 0.1
   m_ThrowOnDetach: 1
-  m_ThrowSmoothingDuration: 0.25
+  m_ThrowSmoothingDuration: 0.15
   m_ThrowSmoothingCurve:
     serializedVersion: 2
     m_Curve:
@@ -296,7 +297,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  m_ThrowVelocityScale: 1.5
+  m_ThrowVelocityScale: 1.9
   m_ThrowAngularVelocityScale: 1
   m_ForceGravityOnDetach: 0
   m_RetainTransformParent: 1
@@ -314,5 +315,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9b7719ab8a1e0ec4487c76a17f2e223a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &3789459316122844236
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3307551797178342093}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b986c1d62bbecd4282f902e8ded0803, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
