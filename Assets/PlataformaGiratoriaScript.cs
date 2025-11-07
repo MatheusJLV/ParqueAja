@@ -7,270 +7,196 @@ using UnityEngine.XR.Interaction.Toolkit.Locomotion.Teleportation;
 
 public class PlataformaGiratoriaScript : MonoBehaviour
 {
-    public GameObject plataforma; // Referencia a la plataforma
+    [Header("Referencias")]
+    [SerializeField] private GameObject plataforma;   // Base que gira
+    [SerializeField] private GameObject controlDer;   // Controlador derecho
+    [SerializeField] private GameObject controlIzq;   // Controlador izquierdo
+    [SerializeField] private GameObject jugadorRig;   // XR Origin / Rig (se parenta a la plataforma)
 
-    public float velocidadMaxima = 100f; // Velocidad máxima de rotación
-    public float aceleracion = 20f; // Aceleración de la rotación
-    private float rotationSpeed = 0f; // Velocidad actual de la plataforma
+    [Header("UI")]
+    [SerializeField] private Slider velocidadSlider;         // opcional
+    [SerializeField] private Slider aceleracionSlider;       // opcional
+    [SerializeField] private Slider duracionSlider;          // opcional
+    [SerializeField] private Button iniciarPlataformaBtn;    // "Iniciar giros" (todo-en-uno)
 
-    public float influencia = 1f; // Factor de influencia basado en la distancia entre los controladores
+    [Header("Teleport Anchors")]
+    [SerializeField] private TeleportationAnchor plataformaTP; // punto sobre la plataforma
+    [SerializeField] private TeleportationAnchor sueloTP;      // punto fuera de la plataforma
 
-    public GameObject controlDer; // Controlador derecho (asignado en el editor)
-    public GameObject controlIzq; // Controlador izquierdo (asignado en el editor)
+    [Header("Giro")]
+    [SerializeField] private float velocidadMaxima = 100f; // grados/seg (valor base)
+    [SerializeField] private float aceleracion = 20f;      // grados/seg^2
+    [SerializeField] private int duracion = 5;           // segundos (para Acelerar-Mantener-Frenar)
+    [SerializeField] private bool manualControl = false;  // si quieres además controlar con botones del mando
 
-    // Sliders para controlar velocidad y aceleración
-    public Slider velocidadSlider; // Slider para controlar la velocidad máxima
-    public Slider aceleracionSlider; // Slider para controlar la aceleración
+    public enum Eje { X, Y, Z }
+    [SerializeField] private Eje ejeRotacion = Eje.Z;      // << Z por defecto
 
-    public int duracion = 5; // Duración predeterminada de la animación
-    public Button iniciarPlataformaBtn; // Botón para iniciar la animación automática
+    [Header("Opciones de entrada/salida")]
+    [Tooltip("Tiempo de espera (seg) tras cada teleport para asegurar estabilidad.")]
+    [SerializeField] private float pausaTrasTeleport = 0.25f;
 
-    public bool manualControl = false; // Control manual activado/desactivado
-    public GameObject jugadorRig; // GameObject que representa al jugador
-
-    // Botones para teletransportación
-    public Button entradaBtn; // Botón para teletransportarse a la plataforma
-    public Button salidaBtn; // Botón para teletransportarse al suelo
-
-    // Variables para teletransportación
-    public TeleportationAnchor plataformaTP; // TeleportationAnchor para el asiento
-    public TeleportationAnchor sueloTP; // TeleportationAnchor para el suelo
-
+    private float rotationSpeed = 0f; // velocidad actual (grados/seg)
+    private float influencia = 1f;    // factor por distancia de controles (se recalcula)
     private bool canGirar = false;
-    void Start()
+    private bool rideEnCurso = false;
+
+    // ---------------- Inspector sanity ----------------
+    private void OnValidate()
     {
-        // Suscribirse a los eventos de los sliders
-        if (velocidadSlider != null)
-        {
-            velocidadSlider.onValueChanged.AddListener(OnVelocidadSliderChanged);
-        }
-
-        if (aceleracionSlider != null)
-        {
-            aceleracionSlider.onValueChanged.AddListener(OnAceleracionSliderChanged);
-        }
-
-        // Suscribirse al evento del botón para iniciar la animación automática
-        if (iniciarPlataformaBtn != null)
-        {
-            iniciarPlataformaBtn.onClick.AddListener(OnIniciarPlataformaButtonClicked);
-        }
-
-        // Suscribirse a los eventos de los botones de teletransportación
-        if (entradaBtn != null)
-        {
-            entradaBtn.onClick.AddListener(OnEntradaButtonClicked);
-        }
-
-        if (salidaBtn != null)
-        {
-            salidaBtn.onClick.AddListener(OnSalidaButtonClicked);
-        }
+        if (plataforma == null) Debug.LogWarning($"{name}: 'plataforma' no asignada.");
+        if (jugadorRig == null) Debug.LogWarning($"{name}: 'jugadorRig' no asignado.");
     }
 
-    void Update()
+    private void Start()
     {
-        // Actualizar la influencia basada en la distancia entre los controladores
-        UpdateInfluencia();
+        if (velocidadSlider) velocidadSlider.onValueChanged.AddListener(v => velocidadMaxima = v);
+        if (aceleracionSlider) aceleracionSlider.onValueChanged.AddListener(v => aceleracion = v);
+        if (duracionSlider) duracionSlider.onValueChanged.AddListener(v => duracion = Mathf.Max(1, Mathf.RoundToInt(v)));
+
+        if (iniciarPlataformaBtn)
+            iniciarPlataformaBtn.onClick.AddListener(() => { if (!rideEnCurso) StartCoroutine(AutoRide()); });
+    }
+
+    private void Update()
+    {
+        // Mantén influencia actualizada para control manual / preview;
+        // la rutina automática TOMARÁ UNA FOTO de esta influencia al iniciar para mantenerla estable.
+        ActualizarInfluenciaPorDistancia();
 
         if (manualControl)
-        {
             ControlManual();
-        }
 
-        // Aplicar la rotación a la plataforma
-        if (rotationSpeed != 0f)
+        if (plataforma != null && Mathf.Abs(rotationSpeed) > Mathf.Epsilon)
         {
-            plataforma.transform.Rotate(Vector3.forward * rotationSpeed * Time.deltaTime, Space.Self);
+            Vector3 axis = ejeRotacion == Eje.X ? Vector3.right :
+                           ejeRotacion == Eje.Y ? Vector3.up : Vector3.forward;
+            plataforma.transform.Rotate(axis * rotationSpeed * Time.deltaTime, Space.Self);
         }
     }
 
-    private void UpdateInfluencia()
+    // ---------------- Núcleo ----------------
+    private void ActualizarInfluenciaPorDistancia()
     {
         if (controlDer != null && controlIzq != null)
         {
-            // Calcular la distancia entre los controladores
-            float distance = Vector3.Distance(controlDer.transform.position, controlIzq.transform.position);
-
-            // Actualizar la influencia (puedes ajustar la fórmula según sea necesario)
-            influencia = 1f / Mathf.Clamp(distance, 0.5f, 2f); // Limitar la influencia entre 0.5 y 2
+            float d = Vector3.Distance(controlDer.transform.position, controlIzq.transform.position);
+            influencia = 1f / Mathf.Clamp(d, 0.5f, 2f); // cerca => más influencia
         }
         else
         {
-            Debug.LogWarning("Los controladores no están asignados. Asignarlos en el editor.");
+            influencia = 1f; // fallback estable
         }
-    }
-
-    void OnTriggerEnter(Collider other)
-    {
-        if (other.CompareTag("Player")) // Asegúrate de usar el tag correcto
-            canGirar = true;
-    }
-
-    void OnTriggerExit(Collider other)
-    {
-        if (other.CompareTag("Player"))
-            canGirar = false;
     }
 
     private void ControlManual()
     {
-
         if (!canGirar) return;
-        // Obtener los dispositivos de la mano derecha
+
         var rightHandDevices = new List<InputDevice>();
         InputDevices.GetDevicesAtXRNode(XRNode.RightHand, rightHandDevices);
 
-        // Variables para verificar los estados de los botones
-        bool rightPrimaryPressed = false;
-        bool rightSecondaryPressed = false;
-
-        // Verificar los botones del controlador derecho
-        foreach (var device in rightHandDevices)
+        bool primary = false, secondary = false;
+        foreach (var dev in rightHandDevices)
         {
-            device.TryGetFeatureValue(CommonUsages.primaryButton, out rightPrimaryPressed);
-            device.TryGetFeatureValue(CommonUsages.secondaryButton, out rightSecondaryPressed);
+            dev.TryGetFeatureValue(CommonUsages.primaryButton, out primary);
+            dev.TryGetFeatureValue(CommonUsages.secondaryButton, out secondary);
         }
 
-        // Control de la rotación de la plataforma
-        if (rightPrimaryPressed)
+        if (primary)
         {
-            // Acelerar en la dirección positiva
-            rotationSpeed = Mathf.Min(rotationSpeed + (aceleracion * influencia) * Time.deltaTime, velocidadMaxima * influencia);
+            rotationSpeed = Mathf.Min(rotationSpeed + (aceleracion * influencia) * Time.deltaTime,
+                                      velocidadMaxima * influencia);
         }
-        else if (rightSecondaryPressed)
+        else if (secondary)
         {
-            // Acelerar en la dirección negativa
-            rotationSpeed = Mathf.Max(rotationSpeed - (aceleracion * influencia) * Time.deltaTime, -velocidadMaxima * influencia);
+            rotationSpeed = Mathf.Max(rotationSpeed - (aceleracion * influencia) * Time.deltaTime,
+                                      -velocidadMaxima * influencia);
         }
         else
         {
-            // Reducir la velocidad gradualmente hacia 0
             rotationSpeed = Mathf.MoveTowards(rotationSpeed, 0f, (aceleracion * influencia) * Time.deltaTime);
         }
     }
 
-    private void OnVelocidadSliderChanged(float value)
+    // ---------------- Paseo automático todo-en-uno ----------------
+    private IEnumerator AutoRide()
     {
-        velocidadMaxima = value;
-        Debug.Log($"Velocidad máxima actualizada a: {velocidadMaxima}");
-    }
+        rideEnCurso = true;
+        if (iniciarPlataformaBtn) iniciarPlataformaBtn.interactable = false;
 
-    private void OnAceleracionSliderChanged(float value)
-    {
-        aceleracion = value;
-        Debug.Log($"Aceleración actualizada a: {aceleracion}");
-    }
+        // 1) Teleport IN + montar (parent)
+        if (plataformaTP) plataformaTP.RequestTeleport();
+        if (jugadorRig && plataforma) jugadorRig.transform.SetParent(plataforma.transform, true);
+        canGirar = true;
 
-    private void OnIniciarPlataformaButtonClicked()
-    {
-        StartCoroutine(AnimarPlataforma());
-        Debug.Log($"Animación automática de la plataforma iniciada con duración: {duracion} segundos.");
-    }
+        // Espera un instante a que el teleport se estabilice
+        if (pausaTrasTeleport > 0f) yield return new WaitForSeconds(pausaTrasTeleport);
 
-    private IEnumerator AnimarPlataforma()
-    {
-        // Fase 1: Aceleración
-        float tiempoTranscurrido = 0f;
-        while (tiempoTranscurrido < duracion / 3f)
+        // 2) Tomar foto de parámetros actuales
+        float influSnapshot = influencia;                                       // influencia congelada para este paseo
+        float vmaxSnapshot = velocidadMaxima * Mathf.Max(0.1f, influSnapshot); // velocidad objetivo del paseo
+        float accelSnapshot = Mathf.Max(0.01f, aceleracion);                    // seguridad
+        int durSnapshot = Mathf.Max(1, duracion);                           // seguridad
+        rotationSpeed = 0f;
+
+        // 3) Acelerar -> Mantener -> Frenar (usa la duración configurada)
+        float fase = durSnapshot / 3f;
+
+        // Acelerar
+        float t = 0f;
+        while (t < fase)
         {
-            tiempoTranscurrido += Time.deltaTime;
-            rotationSpeed = Mathf.Min(rotationSpeed + (aceleracion * influencia) * Time.deltaTime, velocidadMaxima * influencia);
-            plataforma.transform.Rotate(Vector3.forward * rotationSpeed * Time.deltaTime, Space.Self);
+            t += Time.deltaTime;
+            rotationSpeed = Mathf.Min(rotationSpeed + accelSnapshot * Time.deltaTime, vmaxSnapshot);
+            AplicarPaso();
             yield return null;
         }
 
-        // Fase 2: Mantener velocidad máxima
-        tiempoTranscurrido = 0f;
-        while (tiempoTranscurrido < duracion / 3f)
+        // Mantener
+        t = 0f;
+        while (t < fase)
         {
-            tiempoTranscurrido += Time.deltaTime;
-            plataforma.transform.Rotate(Vector3.forward * rotationSpeed * Time.deltaTime, Space.Self);
+            t += Time.deltaTime;
+            rotationSpeed = Mathf.MoveTowards(rotationSpeed, vmaxSnapshot, accelSnapshot * 0.5f * Time.deltaTime);
+            AplicarPaso();
             yield return null;
         }
 
-        // Fase 3: Desaceleración
+        // Frenar
         while (rotationSpeed > 0f)
         {
-            rotationSpeed = Mathf.MoveTowards(rotationSpeed, 0f, (aceleracion * influencia) * Time.deltaTime);
-            plataforma.transform.Rotate(Vector3.forward * rotationSpeed * Time.deltaTime, Space.Self);
+            rotationSpeed = Mathf.MoveTowards(rotationSpeed, 0f, accelSnapshot * Time.deltaTime);
+            AplicarPaso();
             yield return null;
         }
 
-        Debug.Log("Animación automática de la plataforma completada.");
-    }
-    private void OnEntradaButtonClicked()
-    {
-        if (plataformaTP != null)
-        {
-            plataformaTP.RequestTeleport();
-            Debug.Log("Jugador teletransportado a la plataforma.");
-        }
-        else
-        {
-            Debug.LogWarning("El TeleportationAnchor 'plataformaTP' no está asignado.");
-        }
+        // 4) Teleport OUT + desmontar (unparent) y limpiar
+        canGirar = false;
+        if (sueloTP) sueloTP.RequestTeleport();
+        if (pausaTrasTeleport > 0f) yield return new WaitForSeconds(pausaTrasTeleport);
 
-        if (jugadorRig != null)
-        {
-            jugadorRig.transform.SetParent(plataforma.transform);
-            Debug.Log("Jugador ahora es hijo de la plataforma.");
-        }
-        else
-        {
-            Debug.LogWarning("El jugadorRig no está asignado.");
-        }
+        if (jugadorRig) jugadorRig.transform.SetParent(null, true);
+        rotationSpeed = 0f;
+
+        // Fin
+        if (iniciarPlataformaBtn) iniciarPlataformaBtn.interactable = true;
+        rideEnCurso = false;
     }
 
-    private void OnSalidaButtonClicked()
+    private void AplicarPaso()
     {
-        if (sueloTP != null)
-        {
-            sueloTP.RequestTeleport();
-            Debug.Log("Jugador teletransportado al suelo.");
-        }
-        else
-        {
-            Debug.LogWarning("El TeleportationAnchor 'sueloTP' no está asignado.");
-        }
-
-        if (jugadorRig != null)
-        {
-            jugadorRig.transform.SetParent(null);
-            Debug.Log("Jugador liberado de la plataforma.");
-        }
-        else
-        {
-            Debug.LogWarning("El jugadorRig no está asignado.");
-        }
+        if (!plataforma) return;
+        Vector3 axis = ejeRotacion == Eje.X ? Vector3.right :
+                       ejeRotacion == Eje.Y ? Vector3.up : Vector3.forward;
+        plataforma.transform.Rotate(axis * rotationSpeed * Time.deltaTime, Space.Self);
     }
 
-    void OnDestroy()
+    private void OnDestroy()
     {
-        // Desuscribirse de los eventos
-        if (velocidadSlider != null)
-        {
-            velocidadSlider.onValueChanged.RemoveListener(OnVelocidadSliderChanged);
-        }
-
-        if (aceleracionSlider != null)
-        {
-            aceleracionSlider.onValueChanged.RemoveListener(OnAceleracionSliderChanged);
-        }
-
-        if (iniciarPlataformaBtn != null)
-        {
-            iniciarPlataformaBtn.onClick.RemoveListener(OnIniciarPlataformaButtonClicked);
-        }
-
-        if (entradaBtn != null)
-        {
-            entradaBtn.onClick.RemoveListener(OnEntradaButtonClicked);
-        }
-
-        if (salidaBtn != null)
-        {
-            salidaBtn.onClick.RemoveListener(OnSalidaButtonClicked);
-        }
+        if (velocidadSlider) velocidadSlider.onValueChanged.RemoveAllListeners();
+        if (aceleracionSlider) aceleracionSlider.onValueChanged.RemoveAllListeners();
+        if (duracionSlider) duracionSlider.onValueChanged.RemoveAllListeners();
+        if (iniciarPlataformaBtn) iniciarPlataformaBtn.onClick.RemoveAllListeners();
     }
 }
