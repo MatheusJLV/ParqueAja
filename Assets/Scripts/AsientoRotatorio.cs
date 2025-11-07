@@ -7,51 +7,56 @@ using UnityEngine.XR;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
+/*- Teletransportar al jugador al asiento
+ - Girar automáticamente por un tiempo configurable
+ - Desmontar y volver a teletransportar al suelo
+ - Instanciación y gestión de pelotas interactuables*/
 public class AsientoRotatorio : MonoBehaviour
 {
     [Header("Seat & Player")]
-    public GameObject asientoGO;         // Parent/mount for player
+    public GameObject asientoGO;         // Parent/mount for player / El asiento donde se montará el jugador
     public GameObject jugadorRig;        // XR Origin / Rig
 
     [Header("Rotating Mechanism")]
     public Transform mecanismo;          // What actually rotates
     public Vector3 rotateLocalAxis = Vector3.forward; // Local axis (Z by default)
-    public float speedDegPerSec = 120f;  // Constant speed during auto run
+    public float speedDegPerSec = 120f;     // Constant speed during auto run
 
     [Header("Boarding")]
-    public TeleportationAnchor asientoTP;
-    public TeleportationAnchor sueloTP;
-    public float delayAfterTeleportIn = 0.35f;
-    public float delayBeforeTeleportOut = 0.35f;
+    public TeleportationAnchor asientoTP; // Teleport anchor al asiento
+    public TeleportationAnchor sueloTP;  // Teleport anchor al suelo
+    public float delayAfterTeleportIn = 0.35f; // Espera tras teletransportar al asiento
+    public float delayBeforeTeleportOut = 0.35f; // Espera antes de teletransportar al suelo
 
     [Header("Automation UI (like Giroscopio)")]
-    public int defaultRunTimeSeconds = 8;
+    public int defaultRunTimeSeconds = 8; // Tiempo por defecto de rotación automática
     //public Button activateButton;     // Starts full sequence using defaultRunTimeSeconds
     public Slider timerSlider;        // Controls current run duration (seconds)
 
     [Tooltip("If assigned, this button also starts the sequence.")]
-    public Button iniciarBtn;
+    public Button iniciarBtn;  // Botón para iniciar secuencia completa
 
     [Header("Speed (NEW)")]
     [Tooltip("Slider that sets speedDegPerSec directly (degrees/second).")]
-    public Slider velocidadSlider;
+    public Slider velocidadSlider;  // Slider para modificar velocidad de rotación
 
     [Header("Pelotas (kept from your original)")]
-    public Transform posicionInstancia;
-    public GameObject pelotaPrefab;
+    public Transform posicionInstancia; // Lugar donde se instancia la pelota
+
+    public GameObject pelotaPrefab; // Prefab de la pelota
     public GameObject pelotas;        // container
-    public GameObject pelotaActual;
-    public bool pelotaNeeded = false;
-    public bool pelotaWanted = false;
+    public GameObject pelotaActual; // Pelota actualmente en escena
+    public bool pelotaNeeded = false; // Indica si se necesita instanciar nueva pelota
+    public bool pelotaWanted = false; // Indica si el jugador quiere una pelota
 
     [Header("Misc UI (optional from old script)")]
-    public Button ingresarBtn;
-    public Button salirBtn;
+    public Button ingresarBtn;  // Botón para montar al jugador
+    public Button salirBtn;  // Botón para montar al jugador
 
     // State
     public float tiempo = 8f;         // Current run time (seconds)
-    private Coroutine runCo;
-    private bool autoRunning = false;
+    private Coroutine runCo;  // Referencia a la coroutine activa
+    private bool autoRunning = false; // Flag para saber si está rotando automáticamente
 
     // cached listeners
     private UnityEngine.Events.UnityAction _activateCB;
@@ -88,7 +93,7 @@ public class AsientoRotatorio : MonoBehaviour
         // NEW: velocidad slider - sets speedDegPerSec directly
         if (velocidadSlider)
         {
-            // Keep user�s existing slider range; just sync the current value.
+            // Keep user�s existing slider range; just sync the current value.
             velocidadSlider.SetValueWithoutNotify(speedDegPerSec);
             _velCB = v => speedDegPerSec = Mathf.Max(0f, v);
             velocidadSlider.onValueChanged.AddListener(_velCB);
@@ -106,6 +111,7 @@ public class AsientoRotatorio : MonoBehaviour
         }
     }
 
+    // Limpieza de listeners al destruir el objeto
     void OnDestroy()
     {
         //if (activateButton && _activateCB != null) activateButton.onClick.RemoveListener(_activateCB);
@@ -120,16 +126,16 @@ public class AsientoRotatorio : MonoBehaviour
 
     /// Starts a full sequence: Board - AutoRun(seconds) - Unboard
     public void RunSequence(int seconds)
-    {
-        if (runCo != null) StopCoroutine(runCo);
+    { 
+        if (runCo != null) StopCoroutine(runCo);  // Detener cualquier secuencia previa
         runCo = StartCoroutine(RunSequenceCo(seconds));
     }
-
+    
     /// Auto run without boarding/unboarding (useful for testing)
     public void RunForSeconds(int seconds)
     {
         if (seconds <= 0) return;
-        if (runCo != null) StopCoroutine(runCo);
+        if (runCo != null) StopCoroutine(runCo); // Detener cualquier secuencia previa
         runCo = StartCoroutine(AutoRun(seconds));
     }
 
@@ -146,7 +152,7 @@ public class AsientoRotatorio : MonoBehaviour
     }
 
     // ===== Core routines (adapted from Giroscopio) =====
-
+    // Secuencia completa: board -> autorun -> unboard
     private IEnumerator RunSequenceCo(int seconds)
     {
         yield return BoardRoutine();
@@ -154,6 +160,7 @@ public class AsientoRotatorio : MonoBehaviour
         yield return UnboardRoutine();
     }
 
+    // Rotación automática
     private IEnumerator AutoRun(int seconds)
     {
         if (mecanismo == null) yield break;
@@ -174,7 +181,8 @@ public class AsientoRotatorio : MonoBehaviour
         autoRunning = false;
         runCo = null;
     }
-
+    
+    // Retorna suavemente a rotación local identity
     private IEnumerator ReturnToHome(Transform t, float duration)
     {
         if (t == null) yield break;
@@ -192,26 +200,28 @@ public class AsientoRotatorio : MonoBehaviour
         t.localRotation = Quaternion.identity;
     }
 
+    // Monta al jugador en el asiento
     private IEnumerator BoardRoutine()
     {
-        if (asientoTP) asientoTP.RequestTeleport();
+        if (asientoTP) asientoTP.RequestTeleport();  // Teletransporta al asiento
         if (delayAfterTeleportIn > 0f) yield return new WaitForSeconds(delayAfterTeleportIn);
 
         if (jugadorRig && asientoGO)
             jugadorRig.transform.SetParent(asientoGO.transform, true);
     }
 
+    // Desmonta al jugador y lo teletransporta al suelo
     private IEnumerator UnboardRoutine()
     {
         if (jugadorRig)
-            jugadorRig.transform.SetParent(null, true);
+            jugadorRig.transform.SetParent(null, true); // Quita parent al jugador
 
         if (delayBeforeTeleportOut > 0f) yield return new WaitForSeconds(delayBeforeTeleportOut);
-        if (sueloTP) sueloTP.RequestTeleport();
+        if (sueloTP) sueloTP.RequestTeleport(); // Teletransporta al suelo
     }
 
     // ===== Pelotas (unchanged behavior) =====
-
+    // Detecta cuando la pelota sale del trigger y marca necesidad de nueva pelota
     private void OnTriggerExit(Collider other)
     {
         if (pelotaActual != null && other.gameObject == pelotaActual)
@@ -221,6 +231,7 @@ public class AsientoRotatorio : MonoBehaviour
         }
     }
 
+    // Instancia una nueva pelota si es necesaria y deseada
     public void InstanciarPelota()
     {
         if (pelotaNeeded && pelotaWanted && pelotaPrefab && posicionInstancia && pelotas)
@@ -233,13 +244,15 @@ public class AsientoRotatorio : MonoBehaviour
                 posicionInstancia.transform
             );
             pelotaActual = nuevaPelota;
-
+            // Agrega listener para detectar cuando se suelta la pelota
             var grab = nuevaPelota.GetComponent<XRGrabInteractable>();
             if (grab != null)
                 grab.selectExited.AddListener(OnPelotaSelectExited);
         }
     }
 
+
+    // Llamado cuando el jugador suelta la pelota
     private void OnPelotaSelectExited(SelectExitEventArgs args)
     {
         PelotaLanzada();
@@ -251,7 +264,7 @@ public class AsientoRotatorio : MonoBehaviour
     }
 
     // ===== Utilities =====
-
+    // Rota un transform en su espacio local
     private static void RotateLocal(Transform t, Vector3 localAxis, float deltaDegrees)
     {
         if (!t || Mathf.Approximately(deltaDegrees, 0f)) return;

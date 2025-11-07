@@ -1,15 +1,21 @@
 using UnityEngine;
 
+/* Este script controla el comportamiento de una canica que, al
+ colisionar con una "PlacaSolar", es impulsada hacia un "foco".
+ Se utiliza f铆sica real de Unity mediante Rigidbody.*/
 public class CanicaSolarScript : MonoBehaviour
 {
     public GameObject foco; // Asigna el foco desde el editor
     public float fuerzaMultiplicador = 10f; // Ajusta la fuerza desde el editor
 
-    private Rigidbody rb;
+    private Rigidbody rb;// Referencia interna al componente Rigidbody
 
     void Start()
     {
+        // Obtiene el componente Rigidbody del objeto
         rb = GetComponent<Rigidbody>();
+
+        // Si no se encuentra, muestra una advertencia
         if (rb == null)
         {
             Debug.LogWarning("CanicaSolarScript requiere un Rigidbody en el mismo GameObject.");
@@ -18,15 +24,18 @@ public class CanicaSolarScript : MonoBehaviour
 
     void OnCollisionEnter(Collision collision)
     {
+        /* Verifica que la colisi贸n sea con una placa solar
+         y que el foco y el Rigidbody est茅n correctamente asignados.*/
         if (collision.gameObject.CompareTag("PlacaSolar") && foco != null && rb != null)
         {
             // Limpiar fuerzas actuales
-            rb.linearVelocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
+            // Reinicia el movimiento actual para evitar acumulaci贸n de fuerzas
+            rb.linearVelocity = Vector3.zero; // (correcci贸n: 'linearVelocity' no existe en Unity)
+            rb.angularVelocity = Vector3.zero;  // Detiene rotaci贸n
 
-            // Calcula la direcci髇 normalizada hacia el foco
+            // Calcula la direcci贸n normalizada hacia el foco
             Vector3 direccion = (foco.transform.position - transform.position).normalized;
-            // Aplica la fuerza en esa direcci髇
+            // Aplica la fuerza en esa direcci贸n
             rb.AddForce(direccion * fuerzaMultiplicador, ForceMode.Impulse);
         }
     }
