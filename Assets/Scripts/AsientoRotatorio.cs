@@ -63,6 +63,7 @@ public class AsientoRotatorio : MonoBehaviour
 
     void Start()
     {
+        Debug.Log("Hi");
         // Button - start full sequence with default time
         /*if (activateButton)
         {
