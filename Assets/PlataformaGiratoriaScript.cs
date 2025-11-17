@@ -24,20 +24,20 @@ public class PlataformaGiratoriaScript : MonoBehaviour
     [SerializeField] private TeleportationAnchor sueloTP;      // punto fuera de la plataforma
 
     [Header("Giro")]
-    [SerializeField] private float velocidadMaxima = 100f; // grados/seg (valor base)
-    [SerializeField] private float aceleracion = 20f;      // grados/seg^2
-    [SerializeField] private int duracion = 5;           // segundos (para Acelerar-Mantener-Frenar)
-    [SerializeField] private bool manualControl = false;  // si quieres además controlar con botones del mando
+    [SerializeField] private float velocidadMaxima = 150f; // grados/seg (valor base)
+    [SerializeField] private float aceleracion = 50f;      // grados/seg^2
+    [SerializeField] private int duracion = 12;          // segundos (mitad acelera, mitad frena)
+    [SerializeField] private bool manualControl = false;  // control con botones del mando
 
     public enum Eje { X, Y, Z }
-    [SerializeField] private Eje ejeRotacion = Eje.Z;      // << Z por defecto
+    [SerializeField] private Eje ejeRotacion = Eje.Z;      // Z por defecto
 
     [Header("Opciones de entrada/salida")]
     [Tooltip("Tiempo de espera (seg) tras cada teleport para asegurar estabilidad.")]
     [SerializeField] private float pausaTrasTeleport = 0.25f;
 
     private float rotationSpeed = 0f; // velocidad actual (grados/seg)
-    private float influencia = 1f;    // factor por distancia de controles (se recalcula)
+    private float influencia = 1f;    // factor por distancia de controles (LIVE)
     private bool canGirar = false;
     private bool rideEnCurso = false;
 
@@ -55,18 +55,18 @@ public class PlataformaGiratoriaScript : MonoBehaviour
         if (duracionSlider) duracionSlider.onValueChanged.AddListener(v => duracion = Mathf.Max(1, Mathf.RoundToInt(v)));
 
         if (iniciarPlataformaBtn)
-            iniciarPlataformaBtn.onClick.AddListener(() => { if (!rideEnCurso) StartCoroutine(AutoRide()); });
+            iniciarPlataformaBtn.onClick.AddListener(() => { if (!rideEnCurso) StartCoroutine(AutoRide_ManualLike()); });
     }
 
     private void Update()
     {
-        // Mantén influencia actualizada para control manual / preview;
-        // la rutina automática TOMARÁ UNA FOTO de esta influencia al iniciar para mantenerla estable.
+        // Igual que manual: influencia se recalcula SIEMPRE (distancia entre controles):contentReference[oaicite:1]{index=1}.
         ActualizarInfluenciaPorDistancia();
 
         if (manualControl)
-            ControlManual();
+            ControlManualLikeStep(); // usa exactamente la misma logica que el automático usa internamente
 
+        // Aplicar giro segun rotationSpeed
         if (plataforma != null && Mathf.Abs(rotationSpeed) > Mathf.Epsilon)
         {
             Vector3 axis = ejeRotacion == Eje.X ? Vector3.right :
@@ -75,13 +75,14 @@ public class PlataformaGiratoriaScript : MonoBehaviour
         }
     }
 
-    // ---------------- Núcleo ----------------
+    // ---------------- Nucleo ----------------
     private void ActualizarInfluenciaPorDistancia()
     {
         if (controlDer != null && controlIzq != null)
         {
             float d = Vector3.Distance(controlDer.transform.position, controlIzq.transform.position);
-            influencia = 1f / Mathf.Clamp(d, 0.5f, 2f); // cerca => más influencia
+            // cerca => mas influencia (identico a tu lógica actual):contentReference[oaicite:2]{index=2}
+            influencia = 1f / Mathf.Clamp(d, 0.5f, 2f);
         }
         else
         {
@@ -89,7 +90,24 @@ public class PlataformaGiratoriaScript : MonoBehaviour
         }
     }
 
-    private void ControlManual()
+    // *** MISMA FoRMULA que el modo manual original ***
+    // rotationSpeed se acerca a un "objetivo" con aceleración * influencia * dt,
+    // y se clampa a +-(velocidadMaxima * influencia) — idéntico a manual:contentReference[oaicite:3]{index=3}.
+    private void ManualLikeIntegrate(float targetSign)
+    {
+        float targetSpeed = targetSign * (velocidadMaxima * influencia);
+        float step = (aceleracion * influencia) * Time.deltaTime;
+
+        // Si targetSign = 0 - desacelerar hacia 0
+        rotationSpeed = Mathf.MoveTowards(rotationSpeed, targetSpeed, step);
+
+        // clamp de seguridad (por si la influencia cambia bruscamente)
+        float maxMag = velocidadMaxima * influencia;
+        rotationSpeed = Mathf.Clamp(rotationSpeed, -maxMag, maxMag);
+    }
+
+    // Usado en Update cuando manualControl = true (simula botones)
+    private void ControlManualLikeStep()
     {
         if (!canGirar) return;
 
@@ -103,24 +121,15 @@ public class PlataformaGiratoriaScript : MonoBehaviour
             dev.TryGetFeatureValue(CommonUsages.secondaryButton, out secondary);
         }
 
-        if (primary)
-        {
-            rotationSpeed = Mathf.Min(rotationSpeed + (aceleracion * influencia) * Time.deltaTime,
-                                      velocidadMaxima * influencia);
-        }
-        else if (secondary)
-        {
-            rotationSpeed = Mathf.Max(rotationSpeed - (aceleracion * influencia) * Time.deltaTime,
-                                      -velocidadMaxima * influencia);
-        }
-        else
-        {
-            rotationSpeed = Mathf.MoveTowards(rotationSpeed, 0f, (aceleracion * influencia) * Time.deltaTime);
-        }
+        if (primary) ManualLikeIntegrate(+1f);  // acelerar sentido positivo
+        else if (secondary) ManualLikeIntegrate(-1f);  // acelerar sentido negativo
+        else ManualLikeIntegrate(0f);   // soltar - frenar a 0
     }
 
-    // ---------------- Paseo automático todo-en-uno ----------------
-    private IEnumerator AutoRide()
+    // ---------------- Paseo automático "igual al manual" pero con temporizador ----------------
+    // Primera mitad del tiempo: como si mantuvieras PRIMARY (acelera hacia +vmax*influencia en vivo).
+    // Segunda mitad del tiempo: sueltas el botón - desacelera suavemente a 0.
+    private IEnumerator AutoRide_ManualLike()
     {
         rideEnCurso = true;
         if (iniciarPlataformaBtn) iniciarPlataformaBtn.interactable = false;
@@ -130,48 +139,33 @@ public class PlataformaGiratoriaScript : MonoBehaviour
         if (jugadorRig && plataforma) jugadorRig.transform.SetParent(plataforma.transform, true);
         canGirar = true;
 
-        // Espera un instante a que el teleport se estabilice
         if (pausaTrasTeleport > 0f) yield return new WaitForSeconds(pausaTrasTeleport);
 
-        // 2) Tomar foto de parámetros actuales
-        float influSnapshot = influencia;                                       // influencia congelada para este paseo
-        float vmaxSnapshot = velocidadMaxima * Mathf.Max(0.1f, influSnapshot); // velocidad objetivo del paseo
-        float accelSnapshot = Mathf.Max(0.01f, aceleracion);                    // seguridad
-        int durSnapshot = Mathf.Max(1, duracion);                           // seguridad
         rotationSpeed = 0f;
+        float total = Mathf.Max(1f, duracion);
+        float half = total * 0.5f;
 
-        // 3) Acelerar -> Mantener -> Frenar (usa la duración configurada)
-        float fase = durSnapshot / 3f;
-
-        // Acelerar
+        // 2) Fase A: acelerar como manual (PRIMARY held)
         float t = 0f;
-        while (t < fase)
+        while (t < half)
         {
             t += Time.deltaTime;
-            rotationSpeed = Mathf.Min(rotationSpeed + accelSnapshot * Time.deltaTime, vmaxSnapshot);
-            AplicarPaso();
+            ManualLikeIntegrate(+1f); // botón "primary" virtual
+            ApplyRotationStep();
             yield return null;
         }
 
-        // Mantener
+        // 3) Fase B: frenar como manual (released)
         t = 0f;
-        while (t < fase)
+        while (t < half)
         {
             t += Time.deltaTime;
-            rotationSpeed = Mathf.MoveTowards(rotationSpeed, vmaxSnapshot, accelSnapshot * 0.5f * Time.deltaTime);
-            AplicarPaso();
+            ManualLikeIntegrate(0f); // soltar botón - frenar a 0
+            ApplyRotationStep();
             yield return null;
         }
 
-        // Frenar
-        while (rotationSpeed > 0f)
-        {
-            rotationSpeed = Mathf.MoveTowards(rotationSpeed, 0f, accelSnapshot * Time.deltaTime);
-            AplicarPaso();
-            yield return null;
-        }
-
-        // 4) Teleport OUT + desmontar (unparent) y limpiar
+        // 4) Teleport OUT + desmontar
         canGirar = false;
         if (sueloTP) sueloTP.RequestTeleport();
         if (pausaTrasTeleport > 0f) yield return new WaitForSeconds(pausaTrasTeleport);
@@ -179,17 +173,27 @@ public class PlataformaGiratoriaScript : MonoBehaviour
         if (jugadorRig) jugadorRig.transform.SetParent(null, true);
         rotationSpeed = 0f;
 
-        // Fin
         if (iniciarPlataformaBtn) iniciarPlataformaBtn.interactable = true;
         rideEnCurso = false;
     }
 
-    private void AplicarPaso()
+    private void ApplyRotationStep()
     {
         if (!plataforma) return;
         Vector3 axis = ejeRotacion == Eje.X ? Vector3.right :
                        ejeRotacion == Eje.Y ? Vector3.up : Vector3.forward;
         plataforma.transform.Rotate(axis * rotationSpeed * Time.deltaTime, Space.Self);
+    }
+
+    // Triggers opcionales si los usas para habilitar control manual
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("Player")) canGirar = true;
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (other.CompareTag("Player")) { canGirar = false; rotationSpeed = 0f; }
     }
 
     private void OnDestroy()

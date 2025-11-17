@@ -46,6 +46,10 @@ public class CajaSimetria : MonoBehaviour
             {
                 Debug.LogWarning($"CajaSimetria: No GameObject found with name '{reflectGO}'");
             }
+
+            UpdateMirroring();              // ensures correct starting mirrored pose
+            _lastPosition = useGlobalSpace ? transform.position : transform.localPosition;
+            _lastRotation = useGlobalSpace ? transform.rotation : transform.localRotation;
         }
 
         // Auto-assign referencia
