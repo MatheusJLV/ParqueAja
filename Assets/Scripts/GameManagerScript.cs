@@ -39,19 +39,20 @@ public class GameManagerScript : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
+        // Inicializar referencia al Toggle y añadir listener para cambiar visibilidad de objetos.
         if (toggleObject != null)
         {
             toggle = toggleObject.GetComponent<Toggle>();
             toggle.onValueChanged.AddListener(delegate { SetObjectsActive(); });
         }
-
+        // Inicializar dropdown principal (teletransporte) y añadir listener.
         if (dropdownObject != null)
         {
             dropdown = dropdownObject.GetComponent<TMP_Dropdown>();
             dropdown.onValueChanged.AddListener(delegate { TeleportToSelectedAnchor(); });
         }
 
-        // Add listeners for the Left and Right dropdowns
+        // Añadir listeners a los dropdowns de los controladores (si existen).
         if (leftDropdown != null)
         {
             leftDropdown.onValueChanged.AddListener(delegate { HandleLeftDropdownSelection(); });
@@ -63,12 +64,13 @@ public class GameManagerScript : MonoBehaviour
         }
     }
 
-    // Update is called once per frame
+    // Update se llama una vez por frame. 
     void Update()
     {
 
     }
-
+    //Recarga la escena actual.
+    //Uso: reiniciar el estado del nivel sin cambiar de escena.
     public void ReloadCurrentScene()
     {
         // Get the current active scene
@@ -76,7 +78,7 @@ public class GameManagerScript : MonoBehaviour
         // Reload the current scene
         SceneManager.LoadScene(currentScene.name);
     }
-
+    // Activa o desactiva los objetos listados según el estado del Toggle.
     public void SetObjectsActive()
     {
         if (toggle != null)
@@ -91,7 +93,8 @@ public class GameManagerScript : MonoBehaviour
             }
         }
     }
-
+    // Teletransporta al jugador al anchor seleccionado en el dropdown principal.
+    // Busca entre los GameObjects de teleportationAnchors por nombre que contenga la opción seleccionada.
     public void TeleportToSelectedAnchor()
     {
         if (dropdown != null)
@@ -105,7 +108,7 @@ public class GameManagerScript : MonoBehaviour
                     if (anchor != null)
                     {
                         anchor.RequestTeleport();
-                        break;
+                        break; // Finalizar búsqueda tras solicitar teletransporte
                     }
                 }
             }
@@ -113,6 +116,7 @@ public class GameManagerScript : MonoBehaviour
     }
 
     // Method to handle the Left Dropdown selection
+    // Opciones esperadas: "Near", "Far", "Hibrido".
     public void HandleLeftDropdownSelection()
     {
         if (leftDropdown != null && leftNearFarInteractor != null)
@@ -143,7 +147,8 @@ public class GameManagerScript : MonoBehaviour
         }
     }
 
-    // Method to handle the Right Dropdown selection
+    // Method to handle the Right Dropdown selection.
+    // Ajusta las propiedades enableNearCasting / enableFarCasting del Interactor derecho.
     public void HandleRightDropdownSelection()
     {
         if (rightDropdown != null && rightNearFarInteractor != null)
