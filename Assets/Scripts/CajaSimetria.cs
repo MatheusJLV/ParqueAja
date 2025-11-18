@@ -32,26 +32,6 @@ public class CajaSimetria : MonoBehaviour
 
     void Start()
     {
-        // Auto-assign target from reflectGO name
-        // --- Asigna automáticamente el target si se definió un nombre ---
-        if (!string.IsNullOrEmpty(reflectGO))
-        {
-            GameObject foundTarget = GameObject.Find(reflectGO);
-            if (foundTarget != null)
-            {
-                target = foundTarget.transform;
-                Debug.Log($"CajaSimetria: Target set to {reflectGO}");
-            }
-            else
-            {
-                Debug.LogWarning($"CajaSimetria: No GameObject found with name '{reflectGO}'");
-            }
-
-            UpdateMirroring();              // ensures correct starting mirrored pose
-            _lastPosition = useGlobalSpace ? transform.position : transform.localPosition;
-            _lastRotation = useGlobalSpace ? transform.rotation : transform.localRotation;
-        }
-
         // Auto-assign referencia
         GameObject foundReferencia = GameObject.Find("ref simetria camp sim");
         if (foundReferencia != null)
@@ -63,9 +43,14 @@ public class CajaSimetria : MonoBehaviour
         {
             Debug.LogWarning("CajaSimetria: No GameObject found named 'ref simetria camp sim'");
         }
-        // Guarda la posición y rotación iniciales
-        _lastPosition = useGlobalSpace ? transform.position : transform.localPosition;
-        _lastRotation = useGlobalSpace ? transform.rotation : transform.localRotation;
+
+        // Solo actualiza el reflejo si el target está asignado
+        if (target != null)
+        {
+            UpdateMirroring();
+            _lastPosition = useGlobalSpace ? transform.position : transform.localPosition;
+            _lastRotation = useGlobalSpace ? transform.rotation : transform.localRotation;
+        }
     }
 
     void Update()

@@ -254,6 +254,10 @@ public class DibujoEspacial : MonoBehaviour
         currentLine.SetPosition(0, drawingTipRight.position);
         lastPoint = drawingTipRight.position;
         isDrawing = true;
+
+        // Reproducir el AudioSource de la punta derecha
+        var audio = drawingTipRight.GetComponent<AudioSource>();
+        if (audio != null) audio.Play();
     }
 
 
@@ -267,6 +271,10 @@ public class DibujoEspacial : MonoBehaviour
     {
         isDrawing = false;
         currentLine = null;
+
+        // Detener el AudioSource de la punta derecha
+        var audio = drawingTipRight.GetComponent<AudioSource>();
+        if (audio != null) audio.Stop();
     }
 
     public void ClearAllLines()
@@ -288,6 +296,10 @@ public class DibujoEspacial : MonoBehaviour
         currentLine2.SetPosition(0, drawingTipLeft.position);
         lastPoint2 = drawingTipLeft.position;
         isDrawing2 = true;
+
+        // Reproducir el AudioSource de la punta izquierda
+        var audio = drawingTipLeft.GetComponent<AudioSource>();
+        if (audio != null) audio.Play();
     }
 
     void AddPoint2(Vector3 point)
@@ -300,6 +312,10 @@ public class DibujoEspacial : MonoBehaviour
     {
         isDrawing2 = false;
         currentLine2 = null;
+
+        // Detener el AudioSource de la punta izquierda
+        var audio = drawingTipLeft.GetComponent<AudioSource>();
+        if (audio != null) audio.Stop();
     }
 
     public void ClearAllLines2()
