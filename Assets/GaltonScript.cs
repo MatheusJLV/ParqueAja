@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.VFX;
 
 public class GaltonScript : MonoBehaviour
 {
@@ -191,5 +192,36 @@ public class GaltonScript : MonoBehaviour
 
         rb.mass = Mathf.Max(0.0001f, massSlider ? massSlider.value : (rbPrefab ? rbPrefab.mass : rb.mass));
         rb.linearDamping = Mathf.Max(0f, dampingSlider ? dampingSlider.value : (rbPrefab ? rbPrefab.linearDamping : rb.linearDamping));
+    }
+
+    public void LimpiarBolas()
+    {
+        if (bolas == null) return;
+
+        // Recorre todos los hijos directos de 'bolas'
+        for (int i = bolas.transform.childCount - 1; i >= 0; i--)
+        {
+            Transform child = bolas.transform.GetChild(i);
+
+            // Si el hijo tiene AudioSource, lo detiene
+            AudioSource audio = child.GetComponent<AudioSource>();
+            if (audio != null)
+            {
+                audio.Stop();
+            }
+
+            // Busca VisualEffect en los hijos del hijo y los desactiva
+            foreach (Transform subChild in child)
+            {
+                VisualEffect vfx = subChild.GetComponent<VisualEffect>();
+                if (vfx != null)
+                {
+                    vfx.Stop();
+                }
+            }
+
+            // Elimina el hijo
+            Destroy(child.gameObject);
+        }
     }
 }
