@@ -1,5 +1,12 @@
 using UnityEngine;
 using UnityEngine.VFX;
+/*
+VFXAutoStop: detiene y opcionalmente limpia un VisualEffect tras un tiempo.
+Funcionalidades:
+- Reproduce el VFX al habilitar (opcional).
+- Inicia un temporizador (escalado o no) y detiene el VFX al expirar.
+- Puede buscar el VFX en hijos si no está en el mismo GameObject.
+*/
 
 [DisallowMultipleComponent]
 public class VFXAutoStop : MonoBehaviour
@@ -13,8 +20,10 @@ public class VFXAutoStop : MonoBehaviour
     public bool clearOnStop = false;         // Reinit to clear particles instantly
     public bool searchChildrenIfMissing = false; // find a VFX on children if needed
 
+    //Referencia cacheada al VisualEffect objetivo
     VisualEffect vfx;
 
+    //Awake: obtener referencia al VisualEffect (o en hijos si está permitido)
     void Awake()
     {
         // Grab the VFX on this object; optionally look in children
@@ -23,6 +32,7 @@ public class VFXAutoStop : MonoBehaviour
             vfx = GetComponentInChildren<VisualEffect>(true);
     }
 
+    //OnEnable: opcionalmente reproducir y arrancar temporizador
     void OnEnable()
     {
         if (!vfx) { vfx = GetComponent<VisualEffect>(); if (!vfx) return; }
@@ -37,6 +47,7 @@ public class VFXAutoStop : MonoBehaviour
         StartTimer();
     }
 
+    //OnDisable: cancelar invocaciones y coroutines pendientes
     void OnDisable()
     {
         CancelInvoke(nameof(DoStop));
@@ -50,13 +61,14 @@ public class VFXAutoStop : MonoBehaviour
         if (useUnscaledTime) Invoke(nameof(DoStop), seconds);
         else StartCoroutine(StopAfterScaled(seconds));
     }
+    //StopAfterScaled: coroutine que espera tiempo escalado y llama a DoStop
 
     System.Collections.IEnumerator StopAfterScaled(float s)
     {
         yield return new WaitForSeconds(s);  // scaled by timeScale
         DoStop();
     }
-
+    //DoStop: detener el VFX; si clearOnStop=true, reiniciarlo para limpiar partículas
     public void DoStop()
     {
         if (!vfx) return;

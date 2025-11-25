@@ -2,33 +2,43 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.VFX;
 
+/*
+VFXPointerCustom: maneja la detecciÃ³n de un "conductor" dentro de un trigger,
+actualiza un VisualEffect estÃ¡tico con la posiciÃ³n del intruso, activa un
+arco elÃ©ctrico y notifica al VFXCarrier del objeto para que se cargue.
+*/
 public class VFXPointerCustom : MonoBehaviour
 {
+    //VisualEffect que muestra el campo estÃ¡tico
     public VisualEffect staticFieldVFX;
+    //Collider actualmente detectado como intruso
     private Collider intruder1;
+    //GameObject con la animaciÃ³n/efecto visual del arco elÃ©ctrico
     public GameObject arcoElectrico;
+    //Puntos de referencia usados para posicionar curvas/efectos entre 0..3
     public List<GameObject> puntosRef = new List<GameObject>();
 
-
+    //OnTriggerEnter: gestionar entrada de colliders al trigger
     void OnTriggerEnter(Collider other)
     {
         Debug.Log($"[VFXPointerCustom] OnTriggerEnter llamado con: {other.gameObject.name}");
-
+        
+        //Ignorar si no es conductor
         if (!other.CompareTag("Conductor"))
         {
             Debug.Log($"[VFXPointerCustom] {other.gameObject.name} no tiene el tag 'Conductor'. Se ignora.");
             return;
         }
-
+        //Ignorar si ya es el intruso registrado
         if (intruder1 != null && other == intruder1)
         {
-            Debug.Log($"[VFXPointerCustom] {other.gameObject.name} ya está asignado como intruder. Se ignora.");
+            Debug.Log($"[VFXPointerCustom] {other.gameObject.name} ya estï¿½ asignado como intruder. Se ignora.");
             return;
         }
 
         HandleIntruderEnter(other);
     }
-
+    //OnTriggerExit: gestionar salida de colliders del trigger
     void OnTriggerExit(Collider other)
     {
         Debug.Log($"[VFXPointerCustom] OnTriggerExit: {other.gameObject.name}");
@@ -38,11 +48,16 @@ public class VFXPointerCustom : MonoBehaviour
             HandleIntruderExit(other);
         }
     }
-
+    /*
+    HandleIntruderEnter: asigna el intruso, actualiza el VFX estÃ¡tico,
+    activa el arco y solicita carga al VFXCarrier del objeto.
+    */
     private void HandleIntruderEnter(Collider other)
     {
         Debug.Log($"[VFXPointerCustom] Asignando {other.gameObject.name} como intruder1.");
         intruder1 = other;
+
+        // Actualizar VFX si estÃ¡ asignado
         if (staticFieldVFX == null)
         {
             staticFieldVFX.SetBool("Atractor1", true);
@@ -50,10 +65,12 @@ public class VFXPointerCustom : MonoBehaviour
         }
         
         Debug.Log($"[VFXPointerCustom] VFX actualizado para {other.gameObject.name}.");
-
+        
+        // Activar arco elÃ©ctrico visual (si existe)
         if (arcoElectrico != null)
             arcoElectrico.SetActive(true);
 
+        // Notificar al VFXCarrier del objeto intruso para que se cargue
         var carrier = intruder1.GetComponent<VFXCarrier>();
         if (carrier != null)
         {
@@ -66,6 +83,7 @@ public class VFXPointerCustom : MonoBehaviour
         }
     }
 
+    //HandleIntruderExit: limpia la referencia del intruso y apaga efectos
     private void HandleIntruderExit(Collider other)
     {
         if (staticFieldVFX == null)
@@ -79,6 +97,7 @@ public class VFXPointerCustom : MonoBehaviour
             arcoElectrico.SetActive(false);
     }
 
+    //OnTriggerStay: mantener actualizaciones mientras el intruso permanece
     void OnTriggerStay(Collider other)
     {
         if (other == intruder1)
@@ -87,6 +106,7 @@ public class VFXPointerCustom : MonoBehaviour
         }
     }
 
+    //HandleIntruderStay: reposiciona puntos intermedios entre puntosRef[0] y [3]
     private void HandleIntruderStay()
     {
         // Asegura que hay suficientes puntos y que no son nulos
@@ -97,14 +117,15 @@ public class VFXPointerCustom : MonoBehaviour
             Vector3 pos1 = puntosRef[0].transform.position;
             Vector3 pos4 = puntosRef[3].transform.position;
 
-            // El segundo objeto (índice 1) está más cerca del primero (por ejemplo, 25% del camino)
+            // El segundo objeto (ï¿½ndice 1) estï¿½ mï¿½s cerca del primero (por ejemplo, 25% del camino)
             puntosRef[1].transform.position = Vector3.Lerp(pos1, pos4, 0.25f);
 
-            // El tercero (índice 2) está más cerca del cuarto (por ejemplo, 75% del camino)
+            // El tercero (ï¿½ndice 2) estï¿½ mï¿½s cerca del cuarto (por ejemplo, 75% del camino)
             puntosRef[2].transform.position = Vector3.Lerp(pos1, pos4, 0.75f);
         }
     }
 
+    //Update: actualizar posiciÃ³n del intruso en el VFX cada frame si aplica
 
     void Update()
     {

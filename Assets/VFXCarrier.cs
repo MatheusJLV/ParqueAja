@@ -2,47 +2,69 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.VFX;
 
+/*
+VFXCarrier: controla un VisualEffect "carrier" que atrapa objetos conductores
+y puede convertir esa carga en un "Chidori" (ParticleSystems / WandPS).
+Funcionalidades principales:
+- Encender/apagar carrier VFX y audio estático.
+- Detectar intrusos con trigger y actualizar su posición al VFX.
+- Vigilar la orientación local para disparar Chidori cuando apunta dentro de un cono.
+- Auto-apagado del Chidori tras un retraso opcional.
+*/
+
 public class VFXCarrier : MonoBehaviour
 {
+    //Referencia al VisualEffect del carrier
     public VisualEffect carrierVFX;
+    //Collider actualmente "intruso" (primer conductor detectado)
     private Collider intruder1;
+    //Flag de carga del carrier
     public bool isCharged = false;
 
     [Header("Chidori (target Particle Systems)")]
+    //PS objetivo (opcional) - fino
     [SerializeField] private ParticleSystem chidoriThinPS;   // optional
+     //PS objetivo (opcional) - grueso
     [SerializeField] private ParticleSystem chidoriThickPS;  // optional
 
     [Header("Orientation trigger")]
+    //Local axis que representa hacia dónde apunta la varita (p. ej. +X)
     [Tooltip("Local axis that represents the wand's pointing direction. Red arrow in the editor = +X.")]
     [SerializeField] private Vector3 localPointAxis = Vector3.right;
 
+    //Dirección world objetivo que se quiere alcanzar para activar (p. ej. Vector3.up)
     [Tooltip("World direction the local axis should face to trigger. For 'X points UP', use Vector3.up.")]
     [SerializeField] private Vector3 targetWorldDirection = Vector3.up;
 
-    [Tooltip("Total cone angle around the target direction considered 'inside'. 120� => 60� half-angle.")]
+    //Ángulo total del cono (ej. 120 => half-angle 60)
+    [Tooltip("Total cone angle around the target direction considered 'inside'. 120� => 60� half-angle.")]
     [Range(1f, 179f)]
     [SerializeField] private float coneAngle = 120f;
 
+    //Histeresis en grados para evitar flicker al entrar/salir del cono
     [Tooltip("Extra degrees beyond the enter half-angle to release the trigger (prevents flicker).")]
     [SerializeField] private float hysteresis = 10f;
-
+    //Segundos entre comprobaciones de orientación
     [Tooltip("Seconds between orientation checks.")]
     [SerializeField] private float checkInterval = 0.10f;
 
+    //Ángulo mitad de entrada y salida (calculados)
     private float enterHalfAngle;
     private float exitHalfAngle;
     private Coroutine watchRoutine;
-
+    //Referencia opcional a WandPS para encender/apagar el Chidori
     public WandPS wandPS; // reference to the WandPS script
-
-    [SerializeField] private AudioSource staticAS;
+    [SerializeField] private AudioSource staticAS; //Audio source para ruido estático del carrier
 
     [Header("Auto-off")]
+    //Habilitar auto-off del Chidori
     [SerializeField] private bool enableAutoOff = true;
+    //Segundos hasta auto-off
     [SerializeField] private float chidoriAutoOffSeconds = 5f;
     private Coroutine _autoOffCo;
     private bool chidoriActive = false;
 
+    //Start: inicializar estado y asegurar PS/VFX parados al inicio
     private void Start()
     {
         if (carrierVFX != null)
@@ -57,6 +79,7 @@ public class VFXCarrier : MonoBehaviour
         exitHalfAngle = enterHalfAngle + Mathf.Abs(hysteresis);
     }
 
+    //TurnOn: cargar y arrancar VFX/audio + empezar a vigilar orientación
     public void TurnOn()
     {
         isCharged = true;
@@ -76,14 +99,16 @@ public class VFXCarrier : MonoBehaviour
     /// <summary>
     /// Unified shutdown for both the carrier and Chidori.
     /// </summary>
+
+    //Unified shutdown para carrier y Chidori
     public void TurnOff()
     {
         DisarmCarrier();
         DeactivateChidori();
     }
-
-    public void Charge() => TurnOn();
-
+    
+    public void Charge() => TurnOn();  //Alias para TurnOn
+    //Discharge: llamado al detectar un collider conductor; setea intruso si procede
     public void Discharge(Collider other)
     {
         if (!other.CompareTag("Conductor"))
@@ -103,6 +128,7 @@ public class VFXCarrier : MonoBehaviour
         }
     }
 
+    //Trigger enter: si está cargado y collider es conductor, llamar a Discharge
     void OnTriggerEnter(Collider other)
     {
         if (!isCharged || !other.CompareTag("Conductor"))
@@ -111,6 +137,7 @@ public class VFXCarrier : MonoBehaviour
         Discharge(other);
     }
 
+    //Trigger exit: si sale el intruso registrado, limpiar referencia y VFX
     void OnTriggerExit(Collider other)
     {
         if (other == intruder1)
@@ -123,7 +150,7 @@ public class VFXCarrier : MonoBehaviour
             }
         }
     }
-
+    //Update: mantener la posición del intruso actual en el VFX cada frame
     void Update()
     {
         if (intruder1 != null && carrierVFX != null)
@@ -157,7 +184,7 @@ public class VFXCarrier : MonoBehaviour
     }
 
     // ===== Helpers (clean separation of responsibilities) =====
-
+    //DisarmCarrier: parar VFX/audio, limpiar intruso y detener watcher
     private void DisarmCarrier()
     {
         isCharged = false;
@@ -177,6 +204,7 @@ public class VFXCarrier : MonoBehaviour
         StopWatchingOrientation();
     }
 
+    //DeactivateChidori: apagar Chidori y cancelar temporizador auto-off
     private void DeactivateChidori()
     {
         // stop auto-off timer
@@ -197,6 +225,7 @@ public class VFXCarrier : MonoBehaviour
         chidoriActive = false;
     }
 
+    //AutoOff coroutine: cuenta regresiva y apaga todo al expirar
     private IEnumerator AutoOffAfterDelay()
     {
         float timeRemaining = chidoriAutoOffSeconds;
@@ -215,18 +244,18 @@ public class VFXCarrier : MonoBehaviour
         }
 
         _autoOffCo = null;
-        // Timer expired � shut everything down
+        // Timer expired � shut everything down
         TurnOff();
     }
 
     // ===== Orientation watcher =====
-
+    //StartWatchingOrientation: iniciar coroutine de vigilancia si no existe
     private void StartWatchingOrientation()
     {
         if (watchRoutine == null)
             watchRoutine = StartCoroutine(WatchOrientation());
     }
-
+    //StopWatchingOrientation: detener coroutine de vigilancia si existe
     private void StopWatchingOrientation()
     {
         if (watchRoutine != null)
@@ -235,7 +264,12 @@ public class VFXCarrier : MonoBehaviour
             watchRoutine = null;
         }
     }
-
+    /*
+    WatchOrientation: comprueba periódicamente la orientación local en world
+    - Calcula el ángulo entre el eje local apuntador y la dirección objetivo
+    - Si entra dentro del half-angle de entrada dispara SwitchToChidoriNow
+    - Usa histeresis para evitar oscilaciones
+    */
     private IEnumerator WatchOrientation()
     {
         bool armed = true;
@@ -260,6 +294,7 @@ public class VFXCarrier : MonoBehaviour
     }
 
 #if UNITY_EDITOR
+    //OnDrawGizmosSelected: visualizar ejes de apuntado y target en editor
     private void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.red;
