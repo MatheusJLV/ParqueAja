@@ -41,6 +41,10 @@ public class PlataformaGiratoriaScript : MonoBehaviour
     private bool canGirar = false;
     private bool rideEnCurso = false;
 
+    [Header("Ajuste de influencia")]
+    [SerializeField] private float influenciaMultiplicador = 2.5f; // Valor mayor para efecto más drástico
+
+
     // ---------------- Inspector sanity ----------------
     private void OnValidate()
     {
@@ -81,14 +85,15 @@ public class PlataformaGiratoriaScript : MonoBehaviour
         if (controlDer != null && controlIzq != null)
         {
             float d = Vector3.Distance(controlDer.transform.position, controlIzq.transform.position);
-            // cerca => mas influencia (identico a tu lógica actual):contentReference[oaicite:2]{index=2}
-            influencia = 1f / Mathf.Clamp(d, 0.5f, 2f);
+            // cerca => más influencia, amplificada por el multiplicador
+            influencia = influenciaMultiplicador * (1f / Mathf.Clamp(d, 0.5f, 2f));
         }
         else
         {
-            influencia = 1f; // fallback estable
+            influencia = influenciaMultiplicador * 1f; // fallback estable, también amplificado
         }
     }
+
 
     // *** MISMA FoRMULA que el modo manual original ***
     // rotationSpeed se acerca a un "objetivo" con aceleración * influencia * dt,
@@ -129,6 +134,32 @@ public class PlataformaGiratoriaScript : MonoBehaviour
     // ---------------- Paseo automático "igual al manual" pero con temporizador ----------------
     // Primera mitad del tiempo: como si mantuvieras PRIMARY (acelera hacia +vmax*influencia en vivo).
     // Segunda mitad del tiempo: sueltas el botón - desacelera suavemente a 0.
+    // [SerializeField] private bool manualControl = false;  // control con botones del mando
+
+    // if (manualControl)
+    //     ControlManualLikeStep(); // usa exactamente la misma logica que el automático usa internamente
+
+    /*
+    // Usado en Update cuando manualControl = true (simula botones)
+    private void ControlManualLikeStep()
+    {
+        if (!canGirar) return;
+
+        var rightHandDevices = new List<InputDevice>();
+        InputDevices.GetDevicesAtXRNode(XRNode.RightHand, rightHandDevices);
+
+        bool primary = false, secondary = false;
+        foreach (var dev in rightHandDevices)
+        {
+            dev.TryGetFeatureValue(CommonUsages.primaryButton, out primary);
+            dev.TryGetFeatureValue(CommonUsages.secondaryButton, out secondary);
+        }
+
+        if (primary) ManualLikeIntegrate(+1f);  // acelerar sentido positivo
+        else if (secondary) ManualLikeIntegrate(-1f);  // acelerar sentido negativo
+        else ManualLikeIntegrate(0f);   // soltar - frenar a 0
+    }
+    */
     private IEnumerator AutoRide_ManualLike()
     {
         rideEnCurso = true;
@@ -165,10 +196,23 @@ public class PlataformaGiratoriaScript : MonoBehaviour
             yield return null;
         }
 
-        // 4) Teleport OUT + desmontar
+        // 4) Fase C: mantener giro suave durante la pausa antes de teleport OUT
+        if (pausaTrasTeleport > 0f)
+        {
+            float tC = 0f;
+            while (tC < pausaTrasTeleport)
+            {
+                tC += Time.deltaTime;
+                ManualLikeIntegrate(0f); // mantener frenado suave
+                ApplyRotationStep();
+                yield return null;
+            }
+        }
+
+        // 5) Teleport OUT + desmontar
         canGirar = false;
         if (sueloTP) sueloTP.RequestTeleport();
-        if (pausaTrasTeleport > 0f) yield return new WaitForSeconds(pausaTrasTeleport);
+        // Ya se ha hecho la pausa con giro, así que no es necesario repetirla
 
         if (jugadorRig) jugadorRig.transform.SetParent(null, true);
         rotationSpeed = 0f;
