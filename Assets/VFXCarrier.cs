@@ -16,7 +16,7 @@ public class VFXCarrier : MonoBehaviour
 {
     //Referencia al VisualEffect del carrier
     public VisualEffect carrierVFX;
-    //Collider actualmente "intruso" (primer conductor detectado)
+    //Collider actualmente "intruso" (primer conductor detectado) 
     private Collider intruder1;
     //Flag de carga del carrier
     public bool isCharged = false;
