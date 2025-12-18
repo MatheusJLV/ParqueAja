@@ -25,7 +25,7 @@ public class TaggedAudioTriggerRouter : MonoBehaviour
     private Dictionary<string, AudioSource> _instByTag;
     private Dictionary<string, AudioSource> _contByTag;
 
-    // Track which specific colliders we've already “entered” to avoid replays every frame
+    // Track which specific colliders we've already ï¿½enteredï¿½ to avoid replays every frame
     private readonly HashSet<Collider> _seen = new HashSet<Collider>();
 
     private void Awake()
