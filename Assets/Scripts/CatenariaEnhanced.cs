@@ -5,50 +5,60 @@ using System.Collections;
 using UnityEngine.UI;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
+/*
+ Controla la simulación de una catenaria compuesta por múltiples cubos.
+ Gestiona animación, físicas, reseteos y eventos de interacción XR.
+*/
 public class CatenariaEnhanced : MonoBehaviour
 {
+    // Lista de prefabs disponibles para instanciar
     [Header("Prefabs")]
     public List<GameObject> prefabList;
 
+    // Elementos de interfaz
     [Header("UI Elements")]
     public TMP_Dropdown prefabDD;
     public Button animacionBTN;
 
-
+    // Estado actual en ejecución
     [Header("Runtime")]
     public string currentPrefabST;
     public GameObject currentGO;
 
+    // Piezas físicas de la catenaria
     [Header("Catenaria Pieces")]
     public List<Rigidbody> cubos = new List<Rigidbody>();
 
+    // Objeto auxiliar con bisagra
     public GameObject respaldar;
 
+    // Parámetros de animación
     [Header("Animation Settings")]
     public float liftHeight = 2f;
     public float liftDuration = 1.5f;
-
     public float rotateZDegrees = 90f;
     public float rotateZDuration = 1f;
-
     public float rotateYDegrees = 90f;
     public float rotateYDuration = 1f;
-
     public float dropDelay = 0.5f;
 
+    // Ajustes de físicas
     [Header("Physics Tuning")]
     public float gravityForceModifier = 0.2f;
     public float drag = 0.0f;
     public float angularDrag = 1f;
 
-
+    // Transformación original del prefab
     private Vector3 originalPosition;
     private Quaternion originalRotation;
 
-    public ExhibicionScript exhibicionScript; // Reference to the exhibition script
+    // Referencia a script externo de exhibición
+    public ExhibicionScript exhibicionScript; 
 
+    // Controla si las físicas pueden reactivarse manualmente
     private bool fisicasArtificialesApagables = false;
 
+    // Control de captura de pose original
     private bool originalPoseCaptured = false;
     private Vector3 originalLocalPosition;
     private Quaternion originalLocalRotation;
@@ -56,6 +66,7 @@ public class CatenariaEnhanced : MonoBehaviour
 
     private void Start()
     {
+        // Asigna acción al botón de animación
         if (animacionBTN != null)
             animacionBTN.onClick.AddListener(BeginDropSequence);
         // Subscribe to dropdown change event
@@ -71,6 +82,8 @@ public class CatenariaEnhanced : MonoBehaviour
         }*/
         ActualizarCubos();
     }
+
+    // Actualiza la lista de rigidbodies hijos del objeto actual
     public void ActualizarCubos()
     {
         Debug.LogWarning("En metodo: ActualizarCubos");
@@ -103,6 +116,7 @@ public class CatenariaEnhanced : MonoBehaviour
         PrefabChange(selectedName);
     }*/
 
+    // Cambia el prefab activo según el nombre
     public void PrefabChange(string newPrefabName)
     {
         currentPrefabST = newPrefabName;
@@ -111,16 +125,16 @@ public class CatenariaEnhanced : MonoBehaviour
         {
             if (prefab != null && prefab.name == newPrefabName)
             {
-                // Destroy current instance if any
+                // Elimina instancia previa
                 if (currentGO != null)
                 {
                     Destroy(currentGO);
                 }
 
-                // Instantiate new prefab as child
+                 // Instancia el nuevo prefab
                 currentGO = Instantiate(prefab, transform);
 
-                // 
+                // Guarda la pose original una sola vez
                 if (currentGO != null && !originalPoseCaptured)
                 {
                     originalPosition = currentGO.transform.position;        // world
@@ -141,6 +155,8 @@ public class CatenariaEnhanced : MonoBehaviour
 
         Debug.LogWarning($"Prefab with name '{newPrefabName}' not found in prefab list.");
     }
+
+    // Inicia la secuencia de animación y caída
     public void BeginDropSequence()
     {
         Debug.LogWarning("En metodo: BeginDropSequence");
@@ -150,6 +166,7 @@ public class CatenariaEnhanced : MonoBehaviour
             StartCoroutine(DropSequenceRoutine(currentGO));
     }
 
+    // Secuencia principal de animación y físicas
     private IEnumerator DropSequenceRoutine(GameObject currentGO)
 {
     Debug.LogWarning("En corutina: DropSequenceRoutine");
@@ -273,6 +290,8 @@ public class CatenariaEnhanced : MonoBehaviour
 
         Debug.Log($"Reset complete. {cubos.Count} cubos handled.");
     }
+    
+    // Reactiva físicas tras interacción
     public void ReactivatePhysics()
     {
         Debug.LogWarning("En metodo: ReactivatePhysics");
@@ -298,7 +317,7 @@ public class CatenariaEnhanced : MonoBehaviour
         fisicasArtificialesApagables = false;
     }
 
-
+    // Aplica gravedad personalizada por tiempo limitado
     IEnumerator ApplyCustomGravity(Rigidbody rb, float duration, float intensity = 1f)
     {
         Debug.LogWarning("En corutina: ApplyCustomGravity");
@@ -311,6 +330,7 @@ public class CatenariaEnhanced : MonoBehaviour
         }
     }
 
+    // Movimiento interpolado
     private IEnumerator MoveOverTime(Transform t, Vector3 from, Vector3 to, float duration)
     {
         Debug.LogWarning("En corutina: MoveOverTime");
@@ -324,6 +344,7 @@ public class CatenariaEnhanced : MonoBehaviour
         t.position = to;
     }
 
+    // Rotación interpolada
     private IEnumerator RotateOverTime(Transform t, Vector3 axis, float angle, float duration)
     {
         Debug.LogWarning("En corutina: RotateOverTime");
@@ -350,6 +371,7 @@ public class CatenariaEnhanced : MonoBehaviour
         }
     }
 
+    // Reasigna el objeto tras un reset externo
     public void PostReset()
     {
         Transform found = transform.Find("Cubos catenaria(Clone)");
@@ -399,14 +421,15 @@ public class CatenariaEnhanced : MonoBehaviour
         
     }
     
-    
+    // Inicia un reseteo completo de la catenaria
     public void ResetCatenaria()
     {
-        animacionBTN.interactable = false;
-        StopAllCoroutines();
+        animacionBTN.interactable = false;      // Bloquea el botón
+        StopAllCoroutines();                    // Detiene animaciones activas
         StartCoroutine(ResetCatenariaRoutine());
     }
 
+    // Rutina que destruye y reconstruye la catenaria
     private IEnumerator ResetCatenariaRoutine()
     {
         Debug.LogWarning("ResetCatenariaRoutine: Starting reset...");
@@ -416,7 +439,7 @@ public class CatenariaEnhanced : MonoBehaviour
 
         fisicasArtificialesApagables = false;
 
-        // Make sure cubes are non-kinematic so they can fly
+        // Libera los cubos para que salgan disparados
         foreach (var rb in cubos)
         {
             if (rb != null)
@@ -424,7 +447,7 @@ public class CatenariaEnhanced : MonoBehaviour
                 rb.isKinematic = false;
                 rb.useGravity = true;
 
-                // Apply playful force: up + random direction
+                // Fuerza hacia arriba con dispersión aleatoria
                 Vector3 playfulDirection = (Vector3.up * 5f) + new Vector3(
                     Random.Range(-1f, 1f),
                     0f,
@@ -434,10 +457,10 @@ public class CatenariaEnhanced : MonoBehaviour
             }
         }
 
-        // Wait a short time to allow the cubes to "fly"
+        // Tiempo para permitir el movimiento de los cubos
         yield return new WaitForSeconds(0.5f);
 
-        // Animate the respaldar going down
+        // Baja el respaldar usando su bisagra
         if (respaldar != null)
         {
             HingeJoint hinge = respaldar.GetComponent<HingeJoint>();
@@ -452,7 +475,7 @@ public class CatenariaEnhanced : MonoBehaviour
             }
         }
 
-        // Destroy old cubes
+        // Elimina los cubos anteriores
         foreach (var rb in cubos)
         {
             if (rb != null)
@@ -461,21 +484,23 @@ public class CatenariaEnhanced : MonoBehaviour
         cubos.Clear();
         currentGO = null;
 
-        // Reset the exhibition (which reinstantiates new objects)
+        // Reinicia la exhibición para recrear objetos
         if (exhibicionScript != null)
             exhibicionScript.ResetExhibicion();
 
-        // Wait a couple frames + small delay to ensure stability
+        // Espera breve para estabilidad
         yield return null;
         yield return null;
         yield return new WaitForSeconds(0.1f);
 
+        // Reasigna el nuevo objeto instanciado
         PostReset();
 
         yield return new WaitForSeconds(2f);
         animacionBTN.interactable = true;
     }
 
+    // Baja el respaldar aplicando un resorte en la bisagra
     private IEnumerator LayDownRespaldar(HingeJoint hinge, float targetAngle = 0f, float speed = 500f)
     {
         if (hinge == null) yield break;
@@ -489,21 +514,22 @@ public class CatenariaEnhanced : MonoBehaviour
 
         Debug.Log("Applying spring to move respaldar toward " + targetAngle);
 
-        // Wait until it gets close enough
+        // Espera hasta alcanzar el ángulo deseado
         while (Mathf.Abs(hinge.angle - targetAngle) > 1f)
         {
             yield return null;
         }
 
-        // Optional: Wait a short buffer to ensure it's settled
+        // Pequeña pausa de estabilización
         yield return new WaitForSeconds(0.3f);
 
-        // 🔧 Turn off spring to allow free movement
+        // Desactiva el resorte
         hinge.useSpring = false;
 
         Debug.Log("Respaldar reached target and spring disabled.");
     }
 
+    // Fuerza un reseteo inmediato de físicas y jerarquía
     public void ForceResetPhysics()
     {
         Debug.LogWarning("ForceResetPhysics: Aborting all coroutines and restoring default physics");
@@ -521,7 +547,7 @@ public class CatenariaEnhanced : MonoBehaviour
             return;
         }
 
-        // Detach all rigidbodies (cubos) from parent
+        // Desacopla cubos del objeto padre
         List<Transform> detachedTransforms = new List<Transform>();
         foreach (var rb in cubos)
         {
@@ -532,9 +558,10 @@ public class CatenariaEnhanced : MonoBehaviour
             }
         }
 
-        // Reset parent transform
+        // Restaura la transformación original del padre
         currentGO.transform.SetPositionAndRotation(originalPosition, originalRotation);
-
+       
+       // Reasigna cubos y restablece físicas
         foreach (var rb in cubos)
         {
             if (rb == null) continue;
@@ -558,6 +585,7 @@ public class CatenariaEnhanced : MonoBehaviour
         Debug.Log($"ForceResetPhysics: Completed for {cubos.Count} rigidbodies.");
     }
 
+    // Asigna listeners XR a los cubos
     public void SetListenersCubos()
     {
         foreach (Rigidbody rb in cubos)
