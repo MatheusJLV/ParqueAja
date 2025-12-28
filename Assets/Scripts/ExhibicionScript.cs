@@ -2,47 +2,55 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
+/*
+ * ExhibicionScript:
+ * Gestiona una exhibición individual en el parque temático VR, permitiendo
+ * cargar y eliminar objetos instanciados desde prefabs, almacenar posiciones
+ * y rotaciones, y controlar el estado de físicas y elementos de pausa
+ * basado en la proximidad del jugador.
+ */
+
 public class ExhibicionScript : MonoBehaviour
 {
     [SerializeField]
-    private List<GameObject> objetosContenidos; // List of contained game objects
+    private List<GameObject> objetosContenidos; // Lista de objetos de juego contenidos en la exhibición
 
     [SerializeField]
-    private List<GameObject> prefabsExhibicion; // List of exhibition prefabs
+    private List<GameObject> prefabsExhibicion; // Lista de prefabs para instanciar en la exhibición
 
     [SerializeField]
-    private List<GameObject> elementosPausa; // List of game objects to pause
+    private List<GameObject> elementosPausa; // Lista de objetos de juego a pausar/activar
 
     [SerializeField]
-    private List<GameObject> objetosContenidosParents; // List of parent game objects containing children
+    private List<GameObject> objetosContenidosParents; // Lista de objetos padre que contienen hijos
 
     [SerializeField]
-    private List<GameObject> prefabsExhibicionParents; // List of parent prefabs containing children
+    private List<GameObject> prefabsExhibicionParents; // Lista de prefabs padre para instanciar
 
     [SerializeField]
-    private float escala = 1f; // Scale factor for instantiated objects, default value is 1
+    private float escala = 1f; // Factor de escala para objetos instanciados, valor por defecto 1
 
-    private List<Vector3> storedPositions = new List<Vector3>(); // List to store positions
-    private List<Quaternion> storedRotations = new List<Quaternion>(); // List to store rotations
+    private List<Vector3> storedPositions = new List<Vector3>(); // Lista para almacenar posiciones de objetos
+    private List<Quaternion> storedRotations = new List<Quaternion>(); // Lista para almacenar rotaciones de objetos
 
-    private List<Vector3> storedPositionsParents = new List<Vector3>(); // List to store parent positions
-    private List<Quaternion> storedRotationsParents = new List<Quaternion>(); // List to store parent rotations
+    private List<Vector3> storedPositionsParents = new List<Vector3>(); // Lista para almacenar posiciones de padres
+    private List<Quaternion> storedRotationsParents = new List<Quaternion>(); // Lista para almacenar rotaciones de padres
 
     void Start()
     {
-        // Check if objetosContenidos and prefabsExhibicion are the same size
+        // Verificar que objetosContenidos y prefabsExhibicion tengan el mismo tamaño
         if (objetosContenidos.Count != prefabsExhibicion.Count)
         {
             Debug.LogWarning("objetosContenidos and prefabsExhibicion are not the same size.");
         }
 
-        // Check if objetosContenidosParents and prefabsExhibicionParents are the same size
+        // Verificar que objetosContenidosParents y prefabsExhibicionParents tengan el mismo tamaño
         if (objetosContenidosParents.Count != prefabsExhibicionParents.Count)
         {
             Debug.LogWarning("objetosContenidosParents and prefabsExhibicionParents are not the same size.");
         }
 
-        // Store the positions and rotations of the game objects in objetosContenidos
+        // Almacenar posiciones y rotaciones de objetos en objetosContenidos
         foreach (GameObject obj in objetosContenidos)
         {
             if (obj != null)
@@ -52,7 +60,7 @@ public class ExhibicionScript : MonoBehaviour
             }
         }
 
-        // Store the positions and rotations of the parent game objects in objetosContenidosParents
+        // Almacenar posiciones y rotaciones de objetos padre en objetosContenidosParents
         foreach (GameObject parent in objetosContenidosParents)
         {
             if (parent != null)
@@ -62,13 +70,14 @@ public class ExhibicionScript : MonoBehaviour
             }
         }
 
-        // Call SuspensionExhibicion to suspend the exhibition at the start
+        // Llamar a SuspensionExhibicion para suspender la exhibición al inicio
         SuspensionExhibicion();
     }
 
 
     public void Eliminar()
     {
+        // Destruir todos los objetos en objetosContenidos
         foreach (GameObject obj in objetosContenidos)
         {
             if (obj != null)
@@ -78,6 +87,7 @@ public class ExhibicionScript : MonoBehaviour
         }
         objetosContenidos.Clear();
 
+        // Destruir todos los objetos padre en objetosContenidosParents
         foreach (GameObject parent in objetosContenidosParents)
         {
             if (parent != null)
@@ -92,6 +102,7 @@ public class ExhibicionScript : MonoBehaviour
     {
         int index = 0;
 
+        // Instanciar prefabs en posiciones y rotaciones almacenadas
         for (int i = 0; i < prefabsExhibicion.Count; i++)
         {
             if (index < storedPositions.Count && index < storedRotations.Count)
@@ -100,7 +111,7 @@ public class ExhibicionScript : MonoBehaviour
                 if (prefab != null)
                 {
                     GameObject instance = Instantiate(prefab, storedPositions[index], storedRotations[index]);
-                    instance.transform.localScale *= escala; // Scale the instance by the specified scale factor
+                    instance.transform.localScale *= escala; // Escalar la instancia por el factor especificado
                     instance.transform.SetParent(this.transform); 
                     objetosContenidos.Add(instance);
                     Debug.Log("Object  instanciado: " + instance.name);
@@ -109,6 +120,7 @@ public class ExhibicionScript : MonoBehaviour
             }
         }
 
+        // Instanciar prefabs padre en posiciones y rotaciones almacenadas
         for (int i = 0; i < prefabsExhibicionParents.Count; i++)
         {
             if (i < storedPositionsParents.Count && i < storedRotationsParents.Count)
@@ -117,7 +129,7 @@ public class ExhibicionScript : MonoBehaviour
                 if (parentPrefab != null)
                 {
                     GameObject parentInstance = Instantiate(parentPrefab, storedPositionsParents[i], storedRotationsParents[i]);
-                    parentInstance.transform.localScale *= escala; // Scale the instance by the specified scale factor
+                    parentInstance.transform.localScale *= escala; // Escalar la instancia por el factor especificado
                     parentInstance.transform.SetParent(this.transform); // <- Add this line
                     objetosContenidosParents.Add(parentInstance);
                     Debug.Log("Parent  instanciado: " + parentInstance.name);
@@ -128,17 +140,19 @@ public class ExhibicionScript : MonoBehaviour
 
     public void ResetExhibicion()
     {
+        // Eliminar y luego cargar la exhibición
         Eliminar();
         Cargar();
     }
 
     public void ReactivacionExhibicion()
     {
+        // Activar físicas en objetos contenidos
         foreach (GameObject obj in objetosContenidos)
         {
             if (obj != null)
             {
-                // Enable Rigidbody components
+                // Habilitar componentes Rigidbody
                 Rigidbody[] rigidbodies = obj.GetComponents<Rigidbody>();
                 foreach (Rigidbody rb in rigidbodies)
                 {
@@ -148,13 +162,14 @@ public class ExhibicionScript : MonoBehaviour
             }
         }
 
+        // Activar físicas en hijos de objetos padre
         foreach (GameObject parent in objetosContenidosParents)
         {
             if (parent != null)
             {
                 foreach (Transform child in parent.transform)
                 {
-                    // Enable Rigidbody components
+                    // Habilitar componentes Rigidbody
                     Rigidbody[] rigidbodies = child.GetComponents<Rigidbody>();
                     foreach (Rigidbody rb in rigidbodies)
                     {
@@ -165,17 +180,19 @@ public class ExhibicionScript : MonoBehaviour
             }
         }
 
+        // Activar elementos de pausa
         foreach (GameObject obj in elementosPausa)
         {
             if (obj != null)
             {
-                obj.SetActive(true); // Activate the game object
+                obj.SetActive(true); // Activar el objeto de juego
             }
         }
     }
 
     public void SuspensionExhibicion()
     {
+        // Suspender físicas en objetos contenidos, si no están siendo agarrados
         foreach (GameObject obj in objetosContenidos)
         {
             if (obj != null)
@@ -183,7 +200,7 @@ public class ExhibicionScript : MonoBehaviour
                 XRGrabInteractable grabInteractable = obj.GetComponent<XRGrabInteractable>();
                 if (grabInteractable == null || !grabInteractable.isSelected)
                 {
-                    // Disable Rigidbody components
+                    // Deshabilitar componentes Rigidbody
                     Rigidbody[] rigidbodies = obj.GetComponents<Rigidbody>();
                     foreach (Rigidbody rb in rigidbodies)
                     {
@@ -194,6 +211,7 @@ public class ExhibicionScript : MonoBehaviour
             }
         }
 
+        // Suspender físicas en hijos de objetos padre, si no están siendo agarrados
         foreach (GameObject parent in objetosContenidosParents)
         {
             if (parent != null)
@@ -203,7 +221,7 @@ public class ExhibicionScript : MonoBehaviour
                     XRGrabInteractable grabInteractable = child.GetComponent<XRGrabInteractable>();
                     if (grabInteractable == null || !grabInteractable.isSelected)
                     {
-                        // Disable Rigidbody components
+                        // Deshabilitar componentes Rigidbody
                         Rigidbody[] rigidbodies = child.GetComponents<Rigidbody>();
                         foreach (Rigidbody rb in rigidbodies)
                         {
@@ -215,17 +233,19 @@ public class ExhibicionScript : MonoBehaviour
             }
         }
 
+        // Desactivar elementos de pausa
         foreach (GameObject obj in elementosPausa)
         {
             if (obj != null)
             {
-                obj.SetActive(false); // Deactivate the game object
+                obj.SetActive(false); // Desactivar el objeto de juego
             }
         }
     }
 
     private void OnTriggerEnter(Collider other)
     {
+        // Reactivar exhibición si el collider es el Player
         if (other.CompareTag("Player"))
         {
             ReactivacionExhibicion();
@@ -234,6 +254,7 @@ public class ExhibicionScript : MonoBehaviour
 
     private void OnTriggerExit(Collider other)
     {
+        // Suspender exhibición si el collider es el Player
         if (other.CompareTag("Player"))
         {
             SuspensionExhibicion();

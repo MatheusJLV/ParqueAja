@@ -1,43 +1,51 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+/*
+ * ExhibicionGeneralManagerScript:
+ * Gestiona las exhibiciones generales en el parque temático VR, permitiendo
+ * cargar, eliminar, resetear, reactivar y suspender exhibiciones individuales,
+ * además de calibrar posiciones de objetos basados en la altura de la cámara.
+ */
+
 public class ExhibicionGeneralManagerScript : MonoBehaviour
 {
     [SerializeField]
-    private List<GameObject> exhibiciones; // List of game objects containing ExhibicionScript
+    private List<GameObject> exhibiciones; // Lista de objetos de juego que contienen ExhibicionScript
 
     [SerializeField]
-    private List<GameObject> calibracionTarget; // List of game objects to be calibrated
+    private List<GameObject> calibracionTarget; // Lista de objetos de juego a calibrar
 
     [SerializeField]
-    private GameObject AlturaCamara; // Reference to the camera height game object
+    private GameObject AlturaCamara; // Referencia al objeto de altura de la cámara
 
-    private const float referenceHeightDif = 0.6f; // Reference height
+    private const float referenceHeightDif = 0.6f; // Altura de referencia para calibración
 
     [SerializeField]
-    private Transform PtoReferencia; // List of game objects containing ExhibicionScript
+    private Transform PtoReferencia; // Punto de referencia para calibración
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        // Debug log
+        // Log de debug al iniciar
         Debug.Log("ExhibicionGeneralManagerScript: Start");
     }
 
     // Update is called once per frame
     void Update()
     {
-
+        // Método vacío, sin lógica por ahora
     }
 
-    // Method to call Eliminar on the specified exhibicion
+    // Método para llamar Eliminar en la exhibición especificada
     public void Eliminar(string nombre)
     {
-        // Debug log
+        // Log de debug
         Debug.Log("ExhibicionGeneralManagerScript: Eliminar");
 
         try
         {
+            // Buscar la exhibición por nombre y llamar Eliminar
             ExhibicionScript exhibicion = FindExhibicionByName(nombre);
             if (exhibicion != null)
             {
@@ -54,14 +62,15 @@ public class ExhibicionGeneralManagerScript : MonoBehaviour
         }
     }
 
-    // Method to call Cargar on the specified exhibicion
+    // Método para llamar Cargar en la exhibición especificada
     public void Cargar(string nombre)
     {
-        // Debug log
+        // Log de debug
         Debug.Log("ExhibicionGeneralManagerScript: Cargar");
 
         try
         {
+            // Buscar la exhibición por nombre y llamar Cargar
             ExhibicionScript exhibicion = FindExhibicionByName(nombre);
             if (exhibicion != null)
             {
@@ -78,14 +87,15 @@ public class ExhibicionGeneralManagerScript : MonoBehaviour
         }
     }
 
-    // Method to call ResetExhibicion on the specified exhibicion
+    // Método para llamar ResetExhibicion en la exhibición especificada
     public void ResetExhibicion(string nombre)
     {
-        // Debug log
+        // Log de debug
         Debug.Log("ExhibicionGeneralManagerScript: ResetExhibicion");
 
         try
         {
+            // Buscar la exhibición por nombre y llamar ResetExhibicion
             ExhibicionScript exhibicion = FindExhibicionByName(nombre);
             if (exhibicion != null)
             {
@@ -102,14 +112,15 @@ public class ExhibicionGeneralManagerScript : MonoBehaviour
         }
     }
 
-    // Method to call ReactivacionExhibicion on the specified exhibicion
+    // Método para llamar ReactivacionExhibicion en la exhibición especificada
     public void ReactivacionExhibicion(string nombre)
     {
-        // Debug log
+        // Log de debug
         Debug.Log("ExhibicionGeneralManagerScript: ReactivacionExhibicion");
 
         try
         {
+            // Buscar la exhibición por nombre y llamar ReactivacionExhibicion
             ExhibicionScript exhibicion = FindExhibicionByName(nombre);
             if (exhibicion != null)
             {
@@ -126,14 +137,15 @@ public class ExhibicionGeneralManagerScript : MonoBehaviour
         }
     }
 
-    // Method to call SuspensionExhibicion on the specified exhibicion
+// Método para llamar SuspensionExhibicion en la exhibición especificada
     public void SuspensionExhibicion(string nombre)
     {
-        // Debug log
+        // Log de debug
         Debug.Log("ExhibicionGeneralManagerScript: SuspensionExhibicion");
 
         try
         {
+            // Buscar la exhibición por nombre y llamar SuspensionExhibicion
             ExhibicionScript exhibicion = FindExhibicionByName(nombre);
             if (exhibicion != null)
             {
@@ -150,21 +162,25 @@ public class ExhibicionGeneralManagerScript : MonoBehaviour
         }
     }
 
-    // Method to calibrate the positions of the objects in calibracionTarget
+    // Método para calibrar las posiciones de los objetos en calibracionTarget
     public void Calibrar()
     {
+        // Verificar que AlturaCamara esté asignada
         if (AlturaCamara != null)
         {
+            // Calcular altura de la cámara y referencia
             float alturaCamaraY = AlturaCamara.transform.position.y;
             float referencia = PtoReferencia.position.y;
+            // Calcular ajuste basado en diferencia de referencia
             float adjustment = referenceHeightDif - (alturaCamaraY - referencia);
 
+            // Aplicar ajuste a cada target en la lista
             foreach (GameObject target in calibracionTarget)
             {
                 if (target != null)
                 {
                     Vector3 newPosition = target.transform.position;
-                    newPosition.y -= adjustment;
+                    newPosition.y -= adjustment; // Ajustar altura
                     target.transform.position = newPosition;
                 }
             }
@@ -175,14 +191,15 @@ public class ExhibicionGeneralManagerScript : MonoBehaviour
         }
     }
 
-    // Helper method to find an ExhibicionScript by name
+    // Método auxiliar para encontrar un ExhibicionScript por nombre
     private ExhibicionScript FindExhibicionByName(string nombre)
     {
-        // Debug log
+        // Log de debug
         Debug.Log("ExhibicionGeneralManagerScript: FindExhibicionByName");
 
         try
         {
+            // Buscar en la lista de exhibiciones por nombre
             foreach (GameObject obj in exhibiciones)
             {
                 if (obj != null && obj.name == nombre)
@@ -195,6 +212,6 @@ public class ExhibicionGeneralManagerScript : MonoBehaviour
         {
             Debug.LogError("Exception in FindExhibicionByName method of ExhibicionGeneralManagerScript: " + ex.Message);
         }
-        return null;
+        return null; // Retornar null si no se encuentra
     }
 }
