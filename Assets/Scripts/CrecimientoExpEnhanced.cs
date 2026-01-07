@@ -2,36 +2,24 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 //0.002357 altura comprobada
-
-/*
- Controla el experimento de crecimiento.
- Eleva una tapa mediante bisagra y luego instancia
- anillos grandes y pequeÃ±os segÃºn valores de sliders.
-*/
-
 public class CrecimientoExpEnhanced : MonoBehaviour
 {
-    // Padres donde se instanciarÃ¡n los aros
     [Header("Parents for instantiation")]
     public Transform ArosGrandes;
-    public Transform ArosPequeï¿½os;
+    public Transform ArosPequeños;
 
-    // Prefabs de los aros
     [Header("Prefabs")]
     public GameObject PrefabGrandes;
-    public GameObject PrefabPequeï¿½os;
+    public GameObject PrefabPequeños;
 
-    // Controles de interfaz
     [Header("UI")]
     public Slider pequeSd;
     public Slider grandeSd;
     public Button instanciarBtn;
 
-    // Referencia a la tapa con bisagra
     [Header("Tapa reference")]
     public GameObject Tapa;   // The lid to raise
 
-    // ParÃ¡metros de elevaciÃ³n de la tapa
     [Header("Tapa raise settings")]
     public float tapaTargetAngle = 120f;
     public float tapaSpringStrength = 500f;
@@ -40,14 +28,15 @@ public class CrecimientoExpEnhanced : MonoBehaviour
 
     void Start()
     {
-        // Asocia el botÃ³n a la secuencia principal
         if (instanciarBtn != null)
         {
             instanciarBtn.onClick.AddListener(() => StartCoroutine(RaiseTapaAndInstantiate()));
         }
     }
 
-    // Eleva la tapa y luego instancia los aros
+    /// <summary>
+    /// Orchestrates raising the Tapa before instancing rings.
+    /// </summary>
     private IEnumerator RaiseTapaAndInstantiate()
     {
         if (Tapa != null)
@@ -55,7 +44,7 @@ public class CrecimientoExpEnhanced : MonoBehaviour
             HingeJoint hinge = Tapa.GetComponent<HingeJoint>();
             if (hinge != null)
             {
-                // Eleva la tapa antes de instanciar
+                // Raise tapa before instancing
                 yield return StartCoroutine(RaiseTapa(hinge, tapaTargetAngle));
             }
             else
@@ -63,17 +52,18 @@ public class CrecimientoExpEnhanced : MonoBehaviour
                 Debug.LogWarning("CrecimientoExpEnhanced: Tapa has no HingeJoint!");
             }
         }
-        // Espera breve antes de instanciar
         yield return new WaitForSeconds(0.5f);
-         // Instancia los aros segÃºn los sliders
-        InstanciarPequeï¿½as();
+        // After tapa is raised, instantiate the rings
+        InstanciarPequeñas();
         InstanciarGrandes();
     }
 
-    // Eleva la tapa usando un resorte en la bisagra
+    /// <summary>
+    /// Raises the tapa using its hinge spring up to targetAngle, with a kick torque to break rest state.
+    /// </summary>
     private IEnumerator RaiseTapa(HingeJoint hinge, float targetAngle)
     {
-        // Configura el resorte
+        // Apply spring
         JointSpring spring = hinge.spring;
         spring.spring = tapaSpringStrength;
         spring.damper = tapaDamper;
@@ -83,7 +73,7 @@ public class CrecimientoExpEnhanced : MonoBehaviour
 
         Debug.Log("Applying spring to raise tapa toward " + targetAngle);
 
-         // Aplica un impulso para romper el estado de reposo
+        // ?? Kickstart with torque to break resting position
         Rigidbody rb = hinge.GetComponent<Rigidbody>();
         if (rb != null)
         {
@@ -92,40 +82,40 @@ public class CrecimientoExpEnhanced : MonoBehaviour
             Debug.Log("Applied kick torque to unstick tapa");
         }
 
-        // Espera hasta alcanzar el Ã¡ngulo deseado
+        // Wait until tapa reaches the angle
         while (Mathf.Abs(hinge.angle - targetAngle) > 1f)
         {
             yield return null;
         }
 
-        // Buffer de estabilizaciÃ³n
+        // Extra buffer to ensure settled
         yield return new WaitForSeconds(0.5f);
 
-        hinge.useSpring = false;    // Desactiva el resorte
+        hinge.useSpring = false; // stop applying force
 
         Debug.Log("Tapa reached target and spring disabled.");
     }
 
-    // Instancia el nï¿½mero de prefabs pequeï¿½os segï¿½n el valor del slider, usando corutina
-    public void InstanciarPequeï¿½as()
+    // Instancia el número de prefabs pequeños según el valor del slider, usando corutina
+    public void InstanciarPequeñas()
     {
-        if (ArosPequeï¿½os == null || PrefabPequeï¿½os == null || pequeSd == null)
+        if (ArosPequeños == null || PrefabPequeños == null || pequeSd == null)
             return;
 
         int cantidad = Mathf.RoundToInt(pequeSd.value);
-        StartCoroutine(InstanciarPequeï¿½asCoroutine(cantidad));
+        StartCoroutine(InstanciarPequeñasCoroutine(cantidad));
     }
 
-    private IEnumerator InstanciarPequeï¿½asCoroutine(int cantidad)
+    private IEnumerator InstanciarPequeñasCoroutine(int cantidad)
     {
         for (int i = 0; i < cantidad; i++)
         {
-            Instantiate(PrefabPequeï¿½os, ArosPequeï¿½os);
+            Instantiate(PrefabPequeños, ArosPequeños);
             yield return new WaitForSeconds(0.3f);
         }
     }
 
-    // Instancia el nï¿½mero de prefabs grandes segï¿½n el valor del slider, usando corutina
+    // Instancia el número de prefabs grandes según el valor del slider, usando corutina
     public void InstanciarGrandes()
     {
         if (ArosGrandes == null || PrefabGrandes == null || grandeSd == null)
@@ -148,10 +138,9 @@ public class CrecimientoExpEnhanced : MonoBehaviour
     public void Clear()
     {
         ClearChildren(ArosGrandes);
-        ClearChildren(ArosPequeï¿½os);
+        ClearChildren(ArosPequeños);
     }
-    
-    // Destruye todos los hijos de un Transform
+
     private void ClearChildren(Transform parent)
     {
         if (parent == null) return;
