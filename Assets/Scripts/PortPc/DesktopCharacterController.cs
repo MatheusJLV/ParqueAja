@@ -35,6 +35,9 @@ public class DesktopCharacterController : MonoBehaviour
 
     private void Update()
     {
+        if (Input.GetMouseButtonDown(0))
+            LockCursor(true);
+
         HandleMouseLook();
         HandleMovement();
 
