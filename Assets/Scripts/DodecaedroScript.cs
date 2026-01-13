@@ -5,23 +5,30 @@ using UnityEngine.XR.Interaction.Toolkit;
 using System.Collections;
 using UnityEngine.UI;
 
+// Gestiona la colocación de pins en un dodecaedro con seguimiento de conexiones y audio
 public class DodecaedroScript : MonoBehaviour
 {
+    // Materiales visuales para pins: normal y resaltado (último colocado)
     [Header("Materials")]
     public Material normalMaterial;
     public Material lastPlacedMaterial;
 
+    // Configuración de visualización de líneas que conectan pins consecutivos
     [Header("Line Settings")]
     public GameObject linePrefab; // Prefab with a LineRenderer
 
+    // Lista enlazada de pins colocados, mantiene orden de inserción
     public LinkedList<PinData> placedPins = new LinkedList<PinData>();
 
+    // Referencia al transform raíz del dodecaedro para jerarquía de objetos
     [Header("Parenting")]
     public Transform dodecahedronRoot;
 
+    // Botón UI que se activa cuando hay suficientes pins colocados
     [Header("Immersion UI")]
     public Button immersionUIButton;
 
+    // Configuración de audio: efectos de sonido para inserción y extracción de pins
     //  simple audio plumbing for hook/unhook
     [Header("Audio (Hook/Unhook)")]
     public AudioClip hookClip;    // plays on OnPinInserted
@@ -35,11 +42,13 @@ public class DodecaedroScript : MonoBehaviour
     public float minDistance = 0.35f;
     public float maxDistance = 8f;
 
+    // Inicialización: asegura que exista una fuente de audio
     void Awake()
     {
         EnsureAudioSource();
     }
 
+    // Crea o configura una fuente de audio para reproducir efectos de sonido
     private void EnsureAudioSource()
     {
         if (audioSource != null) return;
@@ -55,6 +64,7 @@ public class DodecaedroScript : MonoBehaviour
         audioSource.maxDistance = maxDistance;
     }
 
+    // Reproduce un clip de audio de manera segura (verifica null)
     private void PlayOneShotSafe(AudioClip clip, float volume)
     {
         if (clip == null || audioSource == null) return;
@@ -62,12 +72,14 @@ public class DodecaedroScript : MonoBehaviour
     }
     // 
 
+    // Valida si el botón de inmersión puede ser activado (requiere al menos 2 pins)
     private void ValidateImmersionButton()
     {
         if (immersionUIButton != null)
             immersionUIButton.interactable = placedPins.Count > 1;
     }
 
+    // Manejador de evento XRSocketInteractor: cuando se inserta un pin en un socket
     // Called by XRSocketInteractor's OnSelectEntered event
     public void OnPinInserted(SelectEnterEventArgs args)
     {
@@ -81,6 +93,8 @@ public class DodecaedroScript : MonoBehaviour
         PlayOneShotSafe(hookClip, hookVolume);
     }
 
+    // Añade un nuevo pin a la lista, conectado con línea al pin anterior (si existe)
+    // Destaca el nuevo pin con material especial
     public void AddPin(GameObject pin, Transform anchor)
     {
         // Reset material on previous
@@ -107,16 +121,18 @@ public class DodecaedroScript : MonoBehaviour
 
         placedPins.AddLast(newPinData);
 
-        // Highlight this pin
+        // Resalta este nuevo pin como el último colocado
         SetMaterial(pin, lastPlacedMaterial);
     }
 
+    // Aplica material a un pin usando su Renderer hijo
     private void SetMaterial(GameObject pin, Material mat)
     {
         Renderer rend = pin.GetComponentInChildren<Renderer>();
         if (rend != null) rend.material = mat;
     }
 
+    // Manejador de evento XRSocketInteractor: cuando se retira un pin del socket
     // Called by XRSocketInteractors OnSelectExited event
     public void OnRemovePin(SelectExitEventArgs args)
     {
@@ -128,6 +144,7 @@ public class DodecaedroScript : MonoBehaviour
         PlayOneShotSafe(unhookClip, unhookVolume);
     }
 
+    // Busca y elimina un pin de la lista
     public void RemovePin(GameObject pin)
     {
         LinkedListNode<PinData> node = placedPins.First;
@@ -189,6 +206,8 @@ public class DodecaedroScript : MonoBehaviour
         }
     }*/
 
+    // Elimina un nodo y todos los posteriores: destruye líneas, libera pins y desactiva sockets
+    // Esto mantiene consistencia: no puedes tener huecos en la cadena
     private void RemoveFromNode(LinkedListNode<PinData> startNode)
     {
         LinkedListNode<PinData> node = startNode;
@@ -211,6 +230,7 @@ public class DodecaedroScript : MonoBehaviour
                 }
 
                 // 3. Drop the pin
+                // Libera el pin del dodecaedro y restaura física (gravedad)
                 GameObject pin = node.Value.pinObject;
                 pin.transform.SetParent(null); // Unparent from dodecahedron
 
@@ -219,7 +239,7 @@ public class DodecaedroScript : MonoBehaviour
                     rb.isKinematic = false;
                     rb.useGravity = true;
 
-                    // Apply a small force away from socket
+                    // Aplica pequeño impulso para alejar el pin del socket
                     Vector3 awayFromSocket = (pin.transform.position - socket.transform.position).normalized;
                     rb.AddForce(awayFromSocket * 0.015f, ForceMode.Impulse);
                 }
@@ -243,6 +263,7 @@ public class DodecaedroScript : MonoBehaviour
 
 
 
+    // Desactiva temporalmente un socket para evitar que el pin se resockete inmediatamente
     private IEnumerator TemporarilyDisableSocket(XRSocketInteractor socket, float delay)
     {
         Collider col = socket.GetComponent<Collider>();
@@ -255,6 +276,7 @@ public class DodecaedroScript : MonoBehaviour
         socket.enabled = true;
     }
 
+    // Conveniencia: elimina el primer pin de la secuencia
     public void RemoveFirstPin()
     {
         if (placedPins.First != null)
@@ -266,6 +288,7 @@ public class DodecaedroScript : MonoBehaviour
 
 
     // Placeholder for line intersection logic
+    // Verifica si una línea nueva cruza con otras líneas existentes (placeholder)
     private bool LineCrossesOthers(PinData newPin)
     {
         // You could do a 2D projection and check for line-line intersection here

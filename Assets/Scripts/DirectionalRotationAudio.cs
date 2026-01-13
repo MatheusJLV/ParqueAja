@@ -2,8 +2,10 @@ using System.Collections;
 using UnityEngine;
 
 [DisallowMultipleComponent]
+// Reproduce audio cuando el objeto gira alrededor de un eje específico, con distintos clips para cada dirección
 public class DirectionalRotationAudio : MonoBehaviour
 {
+    // Define cómo se determina el eje de rotación a monitorear
     public enum AxisSource
     {
         LocalAxis,   // use this object's forward/up/right
@@ -11,23 +13,30 @@ public class DirectionalRotationAudio : MonoBehaviour
         FromTwoPoses // compute axis from Pose A -> Pose B
     }
 
+    // Opciones de eje disponibles según el AxisSource
     public enum AxisChoice { Forward, Up, Right, X, Y, Z }
 
     [Header("Axis Detection")]
+    // Fuente del eje de rotación a monitorear
     public AxisSource axisSource = AxisSource.LocalAxis;
+    // Eje específico dentro de la fuente seleccionada
     public AxisChoice axisChoice = AxisChoice.Up;
 
-    [Tooltip("Pose A and Pose B used to infer rotation axis (FromTwoPoses mode).")]
+    // Transforms para calcular eje cuando se usa modo FromTwoPoses
+    [Tooltip("Pose A and Pose B used to infer rotation axis (FromTwoPoses mode).")
+    ]
     public Transform poseA;
     public Transform poseB;
 
     [Header("Clips")]
+    // Clips de audio para cada dirección de rotación
     [Tooltip("Played while rotating in + direction around the axis.")]
     public AudioClip positiveClip;
     [Tooltip("Played while rotating in - direction around the axis.")]
     public AudioClip negativeClip;
 
     [Header("Levels")]
+    // Volumen máximo cuando un clip está activo
     [Range(0f, 1f)] public float maxVolume = 1f;
 
     [Header("Thresholds")]
@@ -51,22 +60,29 @@ public class DirectionalRotationAudio : MonoBehaviour
     [Tooltip("Angular speed (rad/s) mapped to pitchMax.")]
     public float pitchRefSpeed = 3f;
 
-    // Internals
+    // Variables privadas para gestión interna del estado
+    // Almacena el eje normalizado en espacio mundial
     private Vector3 _axisWorld;           // normalized world-space axis
+    // Referencia al Rigidbody para obtener velocidad angular
     private Rigidbody _rb;
+    // Fuentes de audio para ambas direcciones de rotación
     private AudioSource _srcPos;          // + direction
     private AudioSource _srcNeg;          // - direction
+    // Corrutinas activas
     private Coroutine _sampler;
     private Coroutine _fadePos;
     private Coroutine _fadeNeg;
+    // Timestamps para control de timeout
     private float _lastAboveTimePos;
     private float _lastAboveTimeNeg;
+    // Banderas que indican si cada fuente está reproduciendo
     private bool _posActive;
     private bool _negActive;
 
     // Fallback rotation tracking when no Rigidbody
     private Quaternion _prevRot;
 
+    // Inicialización del componente
     void Awake()
     {
         _rb = GetComponent<Rigidbody>();
@@ -88,6 +104,7 @@ public class DirectionalRotationAudio : MonoBehaviour
         RecomputeAxis();
     }
 
+    // Validación de parámetros en el inspector
     void OnValidate()
     {
         // Keep thresholds sane
@@ -95,6 +112,7 @@ public class DirectionalRotationAudio : MonoBehaviour
         if (sampleRateHz < 4f) sampleRateHz = 4f;
     }
 
+    // Activación del componente
     void OnEnable()
     {
         RecomputeAxis();
@@ -102,12 +120,14 @@ public class DirectionalRotationAudio : MonoBehaviour
         _sampler = StartCoroutine(SampleLoop());
     }
 
+    // Desactivación del componente
     void OnDisable()
     {
         if (_sampler != null) StopCoroutine(_sampler);
         HardStop();
     }
 
+    // Calcula o recalcula el eje de rotación según la configuración
     public void RecomputeAxis()
     {
         switch (axisSource)
@@ -154,15 +174,17 @@ public class DirectionalRotationAudio : MonoBehaviour
         _axisWorld.Normalize();
     }
 
+    // Loop principal que monitorea velocidad angular y gestiona transiciones de audio
     private IEnumerator SampleLoop()
     {
         float dt = Mathf.Max(0.02f, 1f / Mathf.Max(1f, sampleRateHz));
         while (true)
         {
-            // Signed angular speed around the chosen axis
+            // Obtiene velocidad angular con signo para determinar dirección
             float signedRadPerSec = GetSignedAngularSpeed(dt);
 
-            // Positive direction handling
+            // Lógica para dirección positiva: verifica umbral de inicio
+            // Si la velocidad supera startThreshold, activa el clip positivo
             if (signedRadPerSec >= startThreshold && positiveClip != null)
             {
                 _lastAboveTimePos = Time.time;
@@ -189,6 +211,8 @@ public class DirectionalRotationAudio : MonoBehaviour
                 StartFade(_srcPos, ref _fadePos, _srcPos.volume, 0f, fadeDuration, startIfNeeded: false, stopAtEnd: true);
             }
 
+            // Lógica para dirección negativa: verifica velocidad en dirección opuesta
+            // Si la velocidad es negativa y supera el umbral, activa el clip negativo
             // Negative direction handling
             if (signedRadPerSec <= -startThreshold && negativeClip != null)
             {
@@ -218,9 +242,11 @@ public class DirectionalRotationAudio : MonoBehaviour
             yield return new WaitForSeconds(dt);
         }
     }
-
+    // Obtiene la velocidad angular con signo alrededor del eje monitorizado
     private float GetSignedAngularSpeed(float dt)
     {
+        // Si hay Rigidbody, obtiene su velocidad angular directamente
+        // Si no, calcula velocidad a partir del cambio de rotación del frame
         if (_rb != null)
         {
             // Rigidbody.angularVelocity is already rad/s in world space
@@ -229,6 +255,8 @@ public class DirectionalRotationAudio : MonoBehaviour
         }
         else
         {
+            // Fallback cuando no hay Rigidbody: calcula velocidad angular manual
+            // Compara rotación actual con la del frame anterior
             // Transform delta
             Quaternion current = transform.rotation;
             Quaternion dq = current * Quaternion.Inverse(_prevRot);
@@ -244,12 +272,14 @@ public class DirectionalRotationAudio : MonoBehaviour
         }
     }
 
+    // Inicia una transición suave de volumen para una fuente de audio
     private void StartFade(AudioSource src, ref Coroutine handle, float from, float to, float dur, bool startIfNeeded, bool stopAtEnd = false)
     {
         if (handle != null) StopCoroutine(handle);
         handle = StartCoroutine(FadeCo(src, from, to, dur, startIfNeeded, stopAtEnd));
     }
 
+    // Corrutina que interpola el volumen de forma suave
     private IEnumerator FadeCo(AudioSource src, float from, float to, float dur, bool startIfNeeded, bool stopAtEnd)
     {
         if (startIfNeeded && src.clip != null && !src.isPlaying)
@@ -273,6 +303,7 @@ public class DirectionalRotationAudio : MonoBehaviour
         }
     }
 
+    // Detiene inmediatamente todos los sonidos y transiciones
     public void HardStop()
     {
         if (_fadePos != null) StopCoroutine(_fadePos);

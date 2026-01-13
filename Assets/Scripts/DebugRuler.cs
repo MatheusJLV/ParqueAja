@@ -6,6 +6,7 @@ using UnityEngine.VFX;
 
 public class DebugRuler : MonoBehaviour
 {
+    // Utilidad visual para inspeccionar transformaciones y propiedades físicas en tiempo de ejecución
     [SerializeField]
     private TMP_Text debugText; // Reference to the TextMeshPro Text component
 
@@ -13,6 +14,8 @@ public class DebugRuler : MonoBehaviour
     private List<GameObject> objects; // List of game objects
 
     public VisualEffect staticFieldVFX;
+
+    // VFX bindings permiten verificar que los parámetros de atracción estén llegando al sistema visual
 
     /*[SerializeField]
     private XRKnob rueda;*/
@@ -23,6 +26,7 @@ public class DebugRuler : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        // Evita errores si el texto de depuración no está asignado en escena
         if (debugText != null)
         {
             string salida = DescribeTransform();
@@ -35,9 +39,10 @@ public class DebugRuler : MonoBehaviour
 
     public string DescribeTransform()
     {
-
+        // Siempre toma el primer objeto de la lista como referencia de medición
         Transform t = objects[0].transform;
 
+        // Devuelve un bloque de texto legible para monitorear posición, rotación y escala en consola/UI
         return $"Object: {this.name}\n" +
                $"Position: {t.position}\n" +
                $"Rotation (Euler): {t.rotation.eulerAngles}\n" +
@@ -49,6 +54,7 @@ public class DebugRuler : MonoBehaviour
 
     private string GetVFXProperties()
     {
+        // Recolecta los flags y posiciones del sistema VFX para depuración
         if (staticFieldVFX == null)
             return "VisualEffect no asignado.\n";
 
@@ -83,6 +89,7 @@ public class DebugRuler : MonoBehaviour
             {
                 if (objects[i] != null)
                 {
+                    // Reporta la posición mundial de cada objeto observado
                     positions += $"Object {i + 1} Position: {objects[i].transform.position}\n";
                 }
             }
@@ -108,6 +115,7 @@ public class DebugRuler : MonoBehaviour
                         Transform child = parent.transform.GetChild(j);
                         if (child != null)
                         {
+                            // Muestra posición y rotación de cada hijo directo para diagnosticar jerarquías
                             positions += $"Object {i + 1} Child {j + 1} Position: {child.position}  Rotation: {child.rotation.eulerAngles}\n";
                         }
                     }
@@ -131,6 +139,7 @@ public class DebugRuler : MonoBehaviour
                     Rigidbody rb = obj.GetComponent<Rigidbody>();
                     if (rb != null)
                     {
+                        // Lista propiedades clave del Rigidbody para revisar configuraciones físicas
                         stats += $"Object {i + 1} ({obj.name}) Rigidbody:\n";
                         stats += $"  Mass: {rb.mass}\n";
                         stats += $"  Linear Damping: {rb.linearDamping}\n";
@@ -154,7 +163,7 @@ public class DebugRuler : MonoBehaviour
         return stats;
     }
 
-    // M�todo para mostrar el estado de pelotaNeeded y pelotaWanted
+    // Método para mostrar el estado de pelotaNeeded y pelotaWanted
     /*private string GetPelotaInfo()
     {
         if (asientoRotatorio != null)

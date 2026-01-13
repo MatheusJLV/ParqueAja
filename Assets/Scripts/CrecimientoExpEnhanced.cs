@@ -2,30 +2,46 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 //0.002357 altura comprobada
+
+// Gestiona la instancia y el crecimiento de prefabs en los aros y controla la tapa (Hinge).
+// Proporciona m√©todos para elevar la tapa y crear/limpiar instancias seg√∫n los sliders.
 public class CrecimientoExpEnhanced : MonoBehaviour
 {
     [Header("Parents for instantiation")]
+    // Padre donde se instancian los prefabs grandes.
     public Transform ArosGrandes;
-    public Transform ArosPequeÒos;
+    // Padre donde se instancian los prefabs peque√±os.
+    public Transform ArosPeque√±os;
 
     [Header("Prefabs")]
+    // Prefab para instanciar en ArosGrandes.
     public GameObject PrefabGrandes;
-    public GameObject PrefabPequeÒos;
+    // Prefab para instanciar en ArosPeque√±os.
+    public GameObject PrefabPeque√±os;
 
     [Header("UI")]
+    // Slider que controla la cantidad de prefabs peque√±os a crear.
     public Slider pequeSd;
+    // Slider que controla la cantidad de prefabs grandes a crear.
     public Slider grandeSd;
+    // Bot√≥n que inicia la rutina de elevaci√≥n e instanciado.
     public Button instanciarBtn;
 
     [Header("Tapa reference")]
+    // Referencia al objeto tapa que se eleva mediante un HingeJoint.
     public GameObject Tapa;   // The lid to raise
 
     [Header("Tapa raise settings")]
+    // √Ångulo objetivo para levantar la tapa.
     public float tapaTargetAngle = 120f;
+    // Fuerza del resorte aplicado a la bisagra.
     public float tapaSpringStrength = 500f;
+    // Amortiguaci√≥n del resorte de la bisagra.
     public float tapaDamper = 10f;
+    // Impulso inicial para despegue si la tapa est√° en reposo.
     public float tapaKickForce = 10f;
 
+    // Inicializa el listener del bot√≥n para levantar la tapa e instanciar los aros.
     void Start()
     {
         if (instanciarBtn != null)
@@ -34,9 +50,7 @@ public class CrecimientoExpEnhanced : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Orchestrates raising the Tapa before instancing rings.
-    /// </summary>
+    // Orquesta la elevaci√≥n de la tapa y, tras estabilizarla, instancia los prefabs.
     private IEnumerator RaiseTapaAndInstantiate()
     {
         if (Tapa != null)
@@ -54,13 +68,12 @@ public class CrecimientoExpEnhanced : MonoBehaviour
         }
         yield return new WaitForSeconds(0.5f);
         // After tapa is raised, instantiate the rings
-        InstanciarPequeÒas();
+        InstanciarPeque√±as();
         InstanciarGrandes();
     }
 
-    /// <summary>
-    /// Raises the tapa using its hinge spring up to targetAngle, with a kick torque to break rest state.
-    /// </summary>
+    // Aplica un resorte en la bisagra hasta targetAngle y usa un impulso para
+    // romper el estado de reposo si es necesario; espera hasta que la tapa se estabilice.
     private IEnumerator RaiseTapa(HingeJoint hinge, float targetAngle)
     {
         // Apply spring
@@ -96,26 +109,27 @@ public class CrecimientoExpEnhanced : MonoBehaviour
         Debug.Log("Tapa reached target and spring disabled.");
     }
 
-    // Instancia el n˙mero de prefabs pequeÒos seg˙n el valor del slider, usando corutina
-    public void InstanciarPequeÒas()
+    // Instancia la cantidad de prefabs peque√±os indicada por pequeSd (si est√° configurado).
+    public void InstanciarPeque√±as()
     {
-        if (ArosPequeÒos == null || PrefabPequeÒos == null || pequeSd == null)
+        if (ArosPeque√±os == null || PrefabPeque√±os == null || pequeSd == null)
             return;
 
         int cantidad = Mathf.RoundToInt(pequeSd.value);
-        StartCoroutine(InstanciarPequeÒasCoroutine(cantidad));
+        StartCoroutine(InstanciarPeque√±asCoroutine(cantidad));
     }
 
-    private IEnumerator InstanciarPequeÒasCoroutine(int cantidad)
+    // Corutina que crea 'cantidad' prefabs peque√±os con un peque√±o retardo.
+    private IEnumerator InstanciarPeque√±asCoroutine(int cantidad)
     {
         for (int i = 0; i < cantidad; i++)
         {
-            Instantiate(PrefabPequeÒos, ArosPequeÒos);
+            Instantiate(PrefabPeque√±os, ArosPeque√±os);
             yield return new WaitForSeconds(0.3f);
         }
     }
 
-    // Instancia el n˙mero de prefabs grandes seg˙n el valor del slider, usando corutina
+    // Instancia la cantidad de prefabs grandes indicada por grandeSd (si est√° configurado).
     public void InstanciarGrandes()
     {
         if (ArosGrandes == null || PrefabGrandes == null || grandeSd == null)
@@ -125,6 +139,7 @@ public class CrecimientoExpEnhanced : MonoBehaviour
         StartCoroutine(InstanciarGrandesCoroutine(cantidad));
     }
 
+    // Corutina que crea 'cantidad' prefabs grandes con un peque√±o retardo.
     private IEnumerator InstanciarGrandesCoroutine(int cantidad)
     {
         for (int i = 0; i < cantidad; i++)
@@ -134,13 +149,14 @@ public class CrecimientoExpEnhanced : MonoBehaviour
         }
     }
 
-    // Elimina todos los hijos de ambos padres
+    // Elimina todos los hijos tanto de ArosGrandes como de ArosPeque√±os.
     public void Clear()
     {
         ClearChildren(ArosGrandes);
-        ClearChildren(ArosPequeÒos);
+        ClearChildren(ArosPeque√±os);
     }
 
+    // Elimina todos los hijos del transform 'parent' si est√° presente.
     private void ClearChildren(Transform parent)
     {
         if (parent == null) return;

@@ -13,23 +13,36 @@ using InputDevice = UnityEngine.XR.InputDevice;
 
 public class DibujoEspacial : MonoBehaviour
 {
-    //public InputActionReference drawAction; // Bind this to trigger or grip
+    // Sistema de dibujo espacial a dos manos con espejo opcional y selección de color
+    //public InputActionReference drawAction; // Vincula esto a gatillo o agarre
     public GameObject linePrefab;
-    public Transform drawingTipRight; // Where the line originates from (usually controller tip)
+    // Punto desde donde origina la línea (generalmente la punta del controlador)
+    public Transform drawingTipRight;
     public GameObject linePrefab2;
+    // Punto desde donde origina la línea izquierda
     public Transform drawingTipLeft;
+    // Distancia mínima entre vértices para suavizar el trazo
     public float minDistance = 0.01f;
 
+    // Renderer de la línea derecha actual
     private LineRenderer currentLine;
+    // Renderer de la línea izquierda actual
     private LineRenderer currentLine2;
+    // Último punto registrado de la mano derecha
     private Vector3 lastPoint;
+    // Último punto registrado de la mano izquierda
     private Vector3 lastPoint2;
+    // Bandera: si está activo el dibujo en mano derecha
     private bool isDrawing = false;
+    // Bandera: si está activo el dibujo en mano izquierda
     private bool isDrawing2 = false;
 
+    // Bandera: permite dibujar solo dentro del área permitida (trigger zone)
     private bool canDraw = false;
 
+    // Lista de todas las líneas dibujadas por la mano derecha
     private List<GameObject> drawnLines = new List<GameObject>();
+    // Lista de todas las líneas dibujadas por la mano izquierda
     private List<GameObject> drawnLines2 = new List<GameObject>();
 
     // Variables para flippear el espejo
@@ -57,6 +70,7 @@ public class DibujoEspacial : MonoBehaviour
 
     void Start()
     {
+        // Enlaza toggles y sliders solo si están presentes en la escena
         if (yToggle != null)
             yToggle.onValueChanged.AddListener(SetYBool);
 
@@ -74,6 +88,7 @@ public class DibujoEspacial : MonoBehaviour
 
     void OnColorSliderChanged(float value)
     {
+        // Mapea la posición del slider al tono HSV y actualiza material y preview UI
         currentColor = Color.HSVToRGB(value, 1f, 1f);
         if (colorSliderFill != null)
             colorSliderFill.color = currentColor;
@@ -84,6 +99,7 @@ public class DibujoEspacial : MonoBehaviour
 
     void OnColorSliderChanged2(float value)
     {
+        // Variante para la segunda mano: color independiente
         currentColor2 = Color.HSVToRGB(value, 1f, 1f);
         if (colorSlider2Fill != null)
             colorSlider2Fill.color = currentColor2;
@@ -93,6 +109,7 @@ public class DibujoEspacial : MonoBehaviour
 
     void OnDestroy()
     {
+        // Limpia listeners para evitar fugas al recargar escenas
         if (yToggle != null)
             yToggle.onValueChanged.RemoveListener(SetYBool);
 
@@ -102,6 +119,7 @@ public class DibujoEspacial : MonoBehaviour
 
     public void FlipEspejo()
     {
+        // Invierte ejes del espejo mediante escala local según los toggles activos
         if (espejo == null) return;
 
         float yScale = YBool ? -1f : 1f;
@@ -123,7 +141,7 @@ public class DibujoEspacial : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Player")) // Aseg�rate de usar el tag correcto
+        if (other.CompareTag("Player")) // Asegúrate de usar el tag correcto
             canDraw = true;
     }
 
@@ -139,7 +157,7 @@ public class DibujoEspacial : MonoBehaviour
             if (isDrawing2)
                 EndLine2();
 
-            // Opcional: tambi�n puedes resetear los estados de los botones previos
+            // Opcional: también puedes resetear los estados de los botones previos
             prevRightPrimary = false;
             prevRightSecondary = false;
             prevLeftPrimary = false;
@@ -148,7 +166,7 @@ public class DibujoEspacial : MonoBehaviour
     }
 
 
-    // Previous frame button states
+    // Estados de botones del frame anterior (para detectar cambios de estado)
     private bool prevRightPrimary = false;
     private bool prevRightSecondary = false;
     private bool prevLeftPrimary = false;
@@ -158,16 +176,19 @@ public class DibujoEspacial : MonoBehaviour
     {
         if (!canDraw) return;
 
+        // Lee dispositivos XR de ambas manos
         var rightHandDevices = new List<InputDevice>();
         var leftHandDevices = new List<InputDevice>();
         InputDevices.GetDevicesAtXRNode(XRNode.RightHand, rightHandDevices);
         InputDevices.GetDevicesAtXRNode(XRNode.LeftHand, leftHandDevices);
 
+        // Estados de botones actuales
         bool rightPrimaryPressed = false;
         bool rightSecondaryPressed = false;
         bool leftPrimaryPressed = false;
         bool leftSecondaryPressed = false;
 
+        // Lee el estado de los botones primario y secundario de cada mano
         foreach (var device in rightHandDevices)
         {
             device.TryGetFeatureValue(CommonUsages.primaryButton, out rightPrimaryPressed);
@@ -180,9 +201,10 @@ public class DibujoEspacial : MonoBehaviour
             device.TryGetFeatureValue(CommonUsages.secondaryButton, out leftSecondaryPressed);
         }
 
-        // === TOGGLE DRAWING FOR RIGHT LINE (Secondary Right) ===
+        // === ALTERNAR DIBUJO LÍNEA DERECHA (Botón Secundario Derecha) ===
         if (rightSecondaryPressed && !prevRightSecondary)
         {
+            // Alterna el estado de dibujo en la mano derecha y crea/termina la línea
             isDrawing = !isDrawing;
             if (isDrawing)
             {
@@ -195,9 +217,10 @@ public class DibujoEspacial : MonoBehaviour
             }
         }
 
-        // === TOGGLE DRAWING FOR LEFT LINE (Secondary Left) ===
+        // === ALTERNAR DIBUJO LÍNEA IZQUIERDA (Botón Secundario Izquierda) ===
         if (leftSecondaryPressed && !prevLeftSecondary)
         {
+            // Alterna el estado de dibujo en la mano izquierda
             isDrawing2 = !isDrawing2;
             if (isDrawing2)
             {
@@ -210,20 +233,23 @@ public class DibujoEspacial : MonoBehaviour
             }
         }
 
-        // === CLEAR BOTH LINES (Primary Left) ===
+        // === LIMPIAR AMBAS LÍNEAS (Botón Primario Izquierda) ===
         if (leftPrimaryPressed && !prevLeftPrimary)
         {
+            // Limpia todos los trazos existentes de ambas manos
             ClearAllLines();
             ClearAllLines2();
         }
 
-        // === DRAW POINTS IF ACTIVE ===
+        // === DIBUJAR PUNTOS SI ESTÁ ACTIVO ===
         if (isDrawing)
         {
             Vector3 currentPos = drawingTipRight.position;
+            // Solo agrega vértices cuando se supera la distancia mínima para suavizar la línea
             if (Vector3.Distance(currentPos, lastPoint) > minDistance)
             {
                 AddPoint(currentPos);
+                // Lee botones primario/secundario de cada mano en XR para controlar dibujo
                 lastPoint = currentPos;
             }
         }
@@ -231,6 +257,7 @@ public class DibujoEspacial : MonoBehaviour
         if (isDrawing2)
         {
             Vector3 currentPos = drawingTipLeft.position;
+            // Misma lógica de espaciamiento mínimo aplicada a la línea izquierda
             if (Vector3.Distance(currentPos, lastPoint2) > minDistance)
             {
                 AddPoint2(currentPos);
@@ -238,7 +265,7 @@ public class DibujoEspacial : MonoBehaviour
             }
         }
 
-        // === UPDATE PREVIOUS BUTTON STATES ===
+        // === ACTUALIZAR ESTADOS PREVIOS DE BOTONES ===
         prevRightPrimary = rightPrimaryPressed;
         prevRightSecondary = rightSecondaryPressed;
         prevLeftPrimary = leftPrimaryPressed;
@@ -247,6 +274,7 @@ public class DibujoEspacial : MonoBehaviour
 
     void StartLine()
     {
+        // Instancia y prepara una nueva línea para la mano derecha
         GameObject lineObj = Instantiate(linePrefab);
         currentLine = lineObj.GetComponent<LineRenderer>();
         drawnLines.Add(lineObj);
@@ -263,12 +291,14 @@ public class DibujoEspacial : MonoBehaviour
 
     void AddPoint(Vector3 point)
     {
+        // Agrega un nuevo vértice a la línea derecha en la posición especificada
         currentLine.positionCount += 1;
         currentLine.SetPosition(currentLine.positionCount - 1, point);
     }
 
     void EndLine()
     {
+        // Finaliza el trazo activo de la mano derecha
         isDrawing = false;
         currentLine = null;
 
@@ -279,6 +309,7 @@ public class DibujoEspacial : MonoBehaviour
 
     public void ClearAllLines()
     {
+        // Destruye todas las líneas creadas por la mano derecha
         foreach (var line in drawnLines)
         {
             if (line != null)
@@ -289,6 +320,7 @@ public class DibujoEspacial : MonoBehaviour
 
     void StartLine2()
     {
+        // Instancia y prepara una nueva línea para la mano izquierda
         GameObject lineObj = Instantiate(linePrefab2);
         currentLine2 = lineObj.GetComponent<LineRenderer>();
         drawnLines2.Add(lineObj);
@@ -304,12 +336,14 @@ public class DibujoEspacial : MonoBehaviour
 
     void AddPoint2(Vector3 point)
     {
+        // Agrega un nuevo vértice a la línea izquierda en la posición especificada
         currentLine2.positionCount += 1;
         currentLine2.SetPosition(currentLine2.positionCount - 1, point);
     }
 
     void EndLine2()
     {
+        // Finaliza el trazo activo de la mano izquierda
         isDrawing2 = false;
         currentLine2 = null;
 
@@ -320,6 +354,7 @@ public class DibujoEspacial : MonoBehaviour
 
     public void ClearAllLines2()
     {
+        // Destruye todas las líneas creadas por la mano izquierda
         foreach (var line in drawnLines2)
         {
             if (line != null)
