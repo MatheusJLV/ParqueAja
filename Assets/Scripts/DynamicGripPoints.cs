@@ -6,10 +6,16 @@ using UnityEngine.XR.Interaction.Toolkit.Interactors;
 [RequireComponent(typeof(UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable))]
 public class DynamicGripPoints : MonoBehaviour
 {
+    /*
+     Ajusta din谩micamente los puntos de agarre primario y secundario
+     seg煤n desde d贸nde se toma el objeto (rayo o agarre directo).
+    */
+
     private XRGrabInteractable grab;
 
     void Awake()
     {
+        // Cachea el interactuable y se suscribe al evento de selecci贸n
         grab = GetComponent<XRGrabInteractable>();
         grab.selectEntered.AddListener(OnSelectEntered);
     }
@@ -18,16 +24,16 @@ public class DynamicGripPoints : MonoBehaviour
     {
         if (args.interactorObject is XRRayInteractor rayInteractor)
         {
-            // If grabbed with ray, use the hit info
+            // Si se agarra con rayo, usa la informaci贸n del impacto
             if (rayInteractor.TryGetHitInfo(out Vector3 hitPos, out Vector3 hitNormal,
                                             out int _, out bool isValid) && isValid)
             {
-                if (!grab.isSelected) // first grab
+                if (!grab.isSelected) // Primer agarre: ajustar ancla primaria
                 {
                     grab.attachTransform.position = hitPos;
                     grab.attachTransform.rotation = Quaternion.LookRotation(-hitNormal, Vector3.up);
                 }
-                else // already selected, so use secondary grip
+                else // Ya estaba seleccionado: usar ancla secundaria
                 {
                     if (grab.secondaryAttachTransform != null)
                     {
@@ -39,7 +45,7 @@ public class DynamicGripPoints : MonoBehaviour
         }
         else if (args.interactorObject is XRDirectInteractor directInteractor)
         {
-            // Direct grab: just use the interactor抯 hand position
+            // Agarre directo: usa la posici贸n y rotaci贸n de la mano
             Vector3 grabPos = directInteractor.transform.position;
             Quaternion grabRot = directInteractor.transform.rotation;
 

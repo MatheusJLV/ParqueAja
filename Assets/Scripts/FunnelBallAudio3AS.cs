@@ -2,6 +2,11 @@ using UnityEngine;
 
 public class FunnelBallAudioLite : MonoBehaviour
 {
+    /*
+     Gestiona audios al entrar, permanecer y salir de triggers con tag "Funel".
+     Usa una fuente continua (loop) y otra para eventos puntuales (one-shot).
+    */
+
     [Header("Audio Sources (assign in Inspector)")]
     [SerializeField] private AudioSource continuousAS;   // loop source
     [SerializeField] private AudioSource spontaneousAS;  // one-shot on enter
@@ -10,15 +15,17 @@ public class FunnelBallAudioLite : MonoBehaviour
     //[SerializeField] private AudioClip rollClip;     // played on continuousAS (loop)
     [SerializeField] private AudioClip enterOneShot; // played once on spontaneousAS (optional)
 
+    // Fuentes adicionales según velocidad (asignar en el Inspector)
     [SerializeField] private AudioSource slowAS;
     [SerializeField] private AudioSource mediumAS;
     [SerializeField] private AudioSource fastAS;
 
+    // Maneja solapes con múltiples triggers para no cortar el loop antes de tiempo
     private int funelOverlapCount = 0; // handle multiple adjacent Funel triggers
 
     void Reset()
     {
-        // Auto-grab first two AudioSources if present
+        // Autollenado rápido de las dos primeras AudioSources en hijos
         var srcs = GetComponentsInChildren<AudioSource>(true);
         if (srcs.Length > 0) continuousAS = srcs[0];
         if (srcs.Length > 1) spontaneousAS = srcs[1];
@@ -26,6 +33,7 @@ public class FunnelBallAudioLite : MonoBehaviour
 
     void Awake()
     {
+        // Configura la fuente continua: sin auto-play, en loop, modo 3D
         if (continuousAS)
         {
             continuousAS.playOnAwake = false;
@@ -33,6 +41,7 @@ public class FunnelBallAudioLite : MonoBehaviour
             /*if (rollClip) continuousAS.clip = rollClip;
             continuousAS.spatialBlend = 1f; // 3D*/
         }
+        // Configura la fuente de eventos: sin auto-play, sin loop, modo 3D
         if (spontaneousAS)
         {
             spontaneousAS.playOnAwake = false;
@@ -45,6 +54,7 @@ public class FunnelBallAudioLite : MonoBehaviour
     {
         if (!other || !other.CompareTag("Funel")) return;
 
+        // Incrementa el conteo al entrar en un trigger válido
         funelOverlapCount++;
 
         // Start loop
@@ -63,7 +73,7 @@ public class FunnelBallAudioLite : MonoBehaviour
     {
         if (!other || !other.CompareTag("Funel")) return;
 
-        // Safety: ensure loop stays alive
+        // Seguridad: podría reactivar el loop si se deseara
         /*if (continuousAS && rollClip && funelOverlapCount > 0 && !continuousAS.isPlaying)
             continuousAS.Play();*/
     }
@@ -72,6 +82,7 @@ public class FunnelBallAudioLite : MonoBehaviour
     {
         if (!other || !other.CompareTag("Funel")) return;
 
+        // Reduce el conteo y detiene el loop cuando ya no hay solapes
         funelOverlapCount = Mathf.Max(0, funelOverlapCount - 1);
         if (funelOverlapCount == 0 && continuousAS && continuousAS.isPlaying)
             continuousAS.Stop();
@@ -79,6 +90,7 @@ public class FunnelBallAudioLite : MonoBehaviour
 
     void OnDisable()
     {
+        // Limpieza: asegura que el loop quede detenido al deshabilitar
         if (continuousAS && continuousAS.isPlaying) continuousAS.Stop();
     }
 }

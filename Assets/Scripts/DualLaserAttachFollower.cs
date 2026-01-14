@@ -7,24 +7,32 @@ using UnityEngine.XR.Interaction.Toolkit.Interactors.Visuals;
 
 public class DualLaserAttachFollower : MonoBehaviour
 {
+    /*
+     Ajusta dinámicamente los puntos de anclaje para manos izquierda y derecha
+     siguiendo el rayo (far) o la mano (near) según el tipo de interactor.
+    */
+
     [Header("Controller References")]
     [SerializeField] private NearFarInteractor leftNearFarInteractor;
     [SerializeField] private NearFarInteractor rightNearFarInteractor;
 
     [Header("Attach Points to Adjust")]
-    [SerializeField] private Transform primaryAnchor;   // Left-hand anchor
-    [SerializeField] private Transform secondaryAnchor; // Right-hand anchor
+    [SerializeField] private Transform primaryAnchor;   // Ancla para mano izquierda
+    [SerializeField] private Transform secondaryAnchor; // Ancla para mano derecha
 
     private XRGrabInteractable grabInteractable;
 
+    // Corrutinas activas para seguir el punto de cada mano
     private Coroutine leftRoutine;
     private Coroutine rightRoutine;
 
+    // Flags de bloqueo cuando la mano está agarrando (no se ajusta por hover)
     private bool leftIsGrabbing = false;
     private bool rightIsGrabbing = false;
 
     private void Awake()
     {
+        // Cachea el XRGrabInteractable y se suscribe a eventos de selección y hover
         grabInteractable = GetComponent<XRGrabInteractable>();
         if (grabInteractable != null)
         {
@@ -37,6 +45,7 @@ public class DualLaserAttachFollower : MonoBehaviour
 
     private void OnDestroy()
     {
+        // Limpia las suscripciones para evitar referencias colgantes
         if (grabInteractable != null)
         {
             grabInteractable.selectEntered.RemoveListener(OnSelectEntered);
@@ -48,6 +57,7 @@ public class DualLaserAttachFollower : MonoBehaviour
 
     private void OnSelectEntered(SelectEnterEventArgs args)
     {
+        // Marca el estado de agarre de cada mano y detiene la rutina dinámica
         if (IsLeftHand(args.interactorObject))
         {
             leftIsGrabbing = true;
@@ -65,6 +75,7 @@ public class DualLaserAttachFollower : MonoBehaviour
 
     private void OnSelectExited(SelectExitEventArgs args)
     {
+        // Libera la marca de agarre para permitir que el hover vuelva a ajustar
         if (IsLeftHand(args.interactorObject))
         {
             leftIsGrabbing = false;
@@ -83,6 +94,7 @@ public class DualLaserAttachFollower : MonoBehaviour
         var interactor = args.interactorObject as IXRInteractor;
         if (interactor == null) return;
 
+        // Solo inicia seguimiento si la mano no está agarrando y no hay corrutina corriendo
         if (IsLeftHand(interactor) && !leftIsGrabbing && leftRoutine == null)
         {
             Debug.Log("[DualLaserAttachFollower] LEFT hand started adjusting PRIMARY anchor");
@@ -98,6 +110,7 @@ public class DualLaserAttachFollower : MonoBehaviour
 
     private void OnHoverExited(HoverExitEventArgs args)
     {
+        // Al salir del hover, solo registra y detiene la rutina correspondiente
         if (IsLeftHand(args.interactorObject))
         {
             Debug.Log("[DualLaserAttachFollower] LEFT hand stopped adjusting PRIMARY anchor");
@@ -113,6 +126,7 @@ public class DualLaserAttachFollower : MonoBehaviour
 
     private void StopRoutineFor(IXRInteractor interactor)
     {
+        // Detiene la corrutina de seguimiento para la mano asociada
         if (IsLeftHand(interactor) && leftRoutine != null)
         {
             StopCoroutine(leftRoutine);
@@ -127,10 +141,12 @@ public class DualLaserAttachFollower : MonoBehaviour
 
     private IEnumerator FollowDynamic(IXRInteractor interactor, Transform targetAnchor, string handLabel)
     {
+        // Sigue el punto final del rayo o la posición de la mano para actualizar el ancla
         while (true)
         {
             if (interactor is NearFarInteractor nearFar)
             {
+                // Usa el punto final válido del rayo; si no hay hit, cae a la posición de la mano
                 var type = nearFar.TryGetCurveEndPoint(
                     out Vector3 end,
                     snapToSelectedAttachIfAvailable: false,
@@ -153,7 +169,7 @@ public class DualLaserAttachFollower : MonoBehaviour
                 targetAnchor.rotation = interactor.transform.rotation;
             }
 
-            // Debug log every few frames (to avoid spamming)
+            // Log de depuración cada cierto número de frames para evitar spam
             if (Time.frameCount % 30 == 0)
             {
                 Debug.Log($"[DualLaserAttachFollower] {handLabel} hand updating {targetAnchor.name} at {targetAnchor.position}");
@@ -164,8 +180,10 @@ public class DualLaserAttachFollower : MonoBehaviour
     }
 
     private bool IsLeftHand(IXRInteractor interactor) =>
+        // Usa tag para identificar mano izquierda
         interactor.transform.CompareTag("LeftHand");
 
     private bool IsRightHand(IXRInteractor interactor) =>
+        // Usa tag para identificar mano derecha
         interactor.transform.CompareTag("RightHand");
 }

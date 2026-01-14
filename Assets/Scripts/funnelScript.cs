@@ -28,7 +28,7 @@ public class funnelScript : MonoBehaviour
 
     private bool puedeIniciar = true;
     public float cooldownInicio = 0.5f; // segundos de cooldown antes de instanciar
-    public float cooldownFinal = 0.5f;  // segundos de cooldown después de instanciar
+    public float cooldownFinal = 0.5f;  // segundos de cooldown despuï¿½s de instanciar
 
     public Collider metaZone; // Zona de meta
     public bool inmersivo = false;
@@ -37,7 +37,7 @@ public class funnelScript : MonoBehaviour
     // Referencias a los objetos a guardar/cargar
     public Transform xrOrigin; // El XR Origin (XR Rig)
     public CharacterController characterController; // CharacterController asociado
-    public Camera xrCamera; // Cámara principal
+    public Camera xrCamera; // CÃ¡mara principal
 
     // Variables para almacenar el estado
     private float storedCameraYOffset;
@@ -51,7 +51,7 @@ public class funnelScript : MonoBehaviour
 
     public float playerScaleFactor = 100f;
 
-    // Valores originales de la cámara, almacenados para restaurar después
+    // Valores originales de la cÃ¡mara, almacenados para restaurar despuÃ©s
     private float originalFOV;
     private float originalNearClip;
     private float originalFarClip;
@@ -160,9 +160,9 @@ public class funnelScript : MonoBehaviour
         originalFarClip = xrCamera.farClipPlane;
 
         // Aplicar nuevos valores para efecto miniatura
-        xrCamera.fieldOfView = 45f;         // Ajusta según necesidad
-        xrCamera.nearClipPlane = 0.01f;     // Para evitar que se corte la geometría cercana
-        xrCamera.farClipPlane = 50f;        // Ajusta según la escala y entorno
+        xrCamera.fieldOfView = 45f;         // Ajusta segÃºn necesidad
+        xrCamera.nearClipPlane = 0.01f;     // Para evitar que se corte la geometrÃ­a cercana
+        xrCamera.farClipPlane = 50f;        // Ajusta segÃºn la escala y entorno
 
         fovReducido = true;
     }
@@ -235,7 +235,7 @@ public class funnelScript : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("pelotaPrefab o pelotas1 no están asignados.");
+            Debug.LogWarning("pelotaPrefab o pelotas1 no estï¿½n asignados.");
         }
 
         // Instanciar pelota para pelotas2
@@ -258,7 +258,7 @@ public class funnelScript : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("pelotaPrefab o pelotas2 no están asignados.");
+            Debug.LogWarning("pelotaPrefab o pelotas2 no estï¿½n asignados.");
         }
 
         // Cooldown al final
@@ -308,7 +308,7 @@ public class funnelScript : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("El TeleportationAnchor 'sueloTP' no está asignado.");
+            Debug.LogWarning("El TeleportationAnchor 'sueloTP' no esta asignado.");
         }
 
         if (jugadorRig != null)
@@ -324,7 +324,7 @@ public class funnelScript : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("jugadorRig no está asignado.");
+            Debug.LogWarning("jugadorRig no esta asignado.");
         }
 
         playerDentro = false;
@@ -416,7 +416,7 @@ public class funnelScript : MonoBehaviour
     {
         if (xrOrigin != null && xrCamera != null)
         {
-            // Y offset de la cámara respecto al XR Origin
+            // Y offset de la cÃ¡mara respecto al XR Origin
             storedCameraYOffset = xrCamera.transform.localPosition.y;
         }
         if (characterController != null)
@@ -451,7 +451,7 @@ public class funnelScript : MonoBehaviour
 
     public void ModificarEstado()
     {
-        // Modificar el Y offset de la cámara respecto al XR Origin
+        // Modificar el Y offset de la cÃ¡mara respecto al XR Origin
         if (xrOrigin != null && xrCamera != null)
         {
             Vector3 camLocalPos = xrCamera.transform.localPosition;
@@ -465,7 +465,7 @@ public class funnelScript : MonoBehaviour
             characterController.height = 0.1f;
         }
 
-        // Modificar los clipping planes de la cámara
+        // Modificar los clipping planes de la cÃ¡mara
         if (xrCamera != null)
         {
             xrCamera.nearClipPlane = 0.1f;

@@ -55,7 +55,7 @@ public class FunnelRollingAudioUnified : MonoBehaviour
         src.loop = true;
         src.playOnAwake = false;
         src.spatialBlend = 1f; // 3D
-        src.volume = 0f;       // start silent; we�ll ramp when inside Funel
+        src.volume = 0f;       // start silent; we'll ramp when inside Funel
     }
 
     void Update()

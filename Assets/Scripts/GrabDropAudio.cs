@@ -3,24 +3,24 @@ using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
 /// <summary>
-/// Plays one-shot sounds on grab (select entered) and drop (select exited).
-/// - Auto-finds XRGrabInteractable on this GameObject (or parent).
-/// - Uses PlayOneShot so it won't interfere with other scripts/loops.
-/// - Creates an AudioSource if none exists (optional).
+/// Reproduce sonidos puntuales al agarrar (select entered) y soltar (select exited).
+/// - Encuentra automáticamente XRGrabInteractable en este GameObject o padre.
+/// - Usa PlayOneShot para no interferir con otros scripts o loops.
+/// - Crea un AudioSource si no existe (opcional).
 /// </summary>
 [DisallowMultipleComponent]
 public class GrabDropAudio : MonoBehaviour
 {
     [Header("Clips")]
-    public AudioClip grabClip;
-    public AudioClip dropClip;
+    public AudioClip grabClip;     // Sonido al agarrar
+    public AudioClip dropClip;     // Sonido al soltar
 
     [Header("Levels")]
-    [Range(0f, 1f)] public float grabVolume = 1f;
-    [Range(0f, 1f)] public float dropVolume = 1f;
+    [Range(0f, 1f)] public float grabVolume = 1f;   // Volumen del sonido de agarre
+    [Range(0f, 1f)] public float dropVolume = 1f;   // Volumen del sonido de suelta
 
     [Header("Variation")]
-    public bool randomizePitch = true;
+    public bool randomizePitch = true;              // Varía el pitch para sonar más natural
     [Range(0f, 0.3f)] public float pitchVariance = 0.06f;
 
     [Header("Audio Source")]
@@ -31,24 +31,27 @@ public class GrabDropAudio : MonoBehaviour
     public float minDistance = 0.3f;
     public float maxDistance = 6f;
 
+    // Referencia al interactuable XR
     private XRGrabInteractable _grab;
 
     void OnEnable()
     {
-        // Find the interactable on this object (or parent) at runtime, so instantiation is safe
+        // Busca el interactuable en este objeto o padre en tiempo de ejecución
         _grab = GetComponent<XRGrabInteractable>() ?? GetComponentInParent<XRGrabInteractable>();
         if (_grab != null)
         {
-            _grab.selectEntered.AddListener(OnSelectEntered); // Fix: Use AddListener for UnityEvent
-            _grab.selectExited.AddListener(OnSelectExited);   // Fix: Use AddListener for UnityEvent
+            // Suscribe a eventos de selección (agarre y suelta)
+            _grab.selectEntered.AddListener(OnSelectEntered);
+            _grab.selectExited.AddListener(OnSelectExited);
         }
 
-        // Prepare / create an AudioSource if needed (but don't touch existing .clip)
+        // Prepara o crea un AudioSource si es necesario (sin tocar clips existentes)
         if (audioSource == null)
         {
             audioSource = GetComponent<AudioSource>();
             if (audioSource == null)
             {
+                // Si no existe, crea uno nuevo con configuración por defecto
                 audioSource = gameObject.AddComponent<AudioSource>();
                 audioSource.playOnAwake = false;
                 audioSource.loop = false;
@@ -61,27 +64,34 @@ public class GrabDropAudio : MonoBehaviour
 
     void OnDisable()
     {
+        // Desuscribe los listeners para evitar referencias colgantes
         if (_grab != null)
         {
-            _grab.selectEntered.RemoveListener(OnSelectEntered); // Fix: Use RemoveListener for UnityEvent
-            _grab.selectExited.RemoveListener(OnSelectExited);   // Fix: Use RemoveListener for UnityEvent
+            _grab.selectEntered.RemoveListener(OnSelectEntered);
+            _grab.selectExited.RemoveListener(OnSelectExited);
         }
     }
 
+    // Reproduce sonido cuando se agarra el objeto
     private void OnSelectEntered(SelectEnterEventArgs args)
     {
         if (!grabClip || audioSource == null) return;
+        // Calcula pitch aleatorio si está habilitado
         float pitch = randomizePitch ? 1f + Random.Range(-pitchVariance, pitchVariance) : 1f;
+        // Guarda el pitch anterior y lo restaura después de PlayOneShot
         var oldPitch = audioSource.pitch;
         audioSource.pitch = pitch;
         audioSource.PlayOneShot(grabClip, grabVolume);
-        audioSource.pitch = oldPitch; // restore in case other systems use this source later
+        audioSource.pitch = oldPitch; // Restaura para no afectar otros sistemas
     }
 
+    // Reproduce sonido cuando se suelta el objeto
     private void OnSelectExited(SelectExitEventArgs args)
     {
         if (!dropClip || audioSource == null) return;
+        // Calcula pitch aleatorio si está habilitado
         float pitch = randomizePitch ? 1f + Random.Range(-pitchVariance, pitchVariance) : 1f;
+        // Guarda el pitch anterior y lo restaura después de PlayOneShot
         var oldPitch = audioSource.pitch;
         audioSource.pitch = pitch;
         audioSource.PlayOneShot(dropClip, dropVolume);

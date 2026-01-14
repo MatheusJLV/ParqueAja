@@ -8,6 +8,11 @@ using System.Collections.Generic;
 
 public class HammiltonInmersivo : MonoBehaviour
 {
+    /*
+     Controla la experiencia inmersiva dentro del dodecaedro siguiendo un camino Hamiltoniano,
+     con efectos de c谩mara, filtro de audio y movimiento del jugador.
+    */
+
     [Header("References")]
     public GameObject jugadorRig;
     public Transform xrOrigin;
@@ -31,7 +36,7 @@ public class HammiltonInmersivo : MonoBehaviour
     [Header("World Immersion (Dodecahedron-Based)")]
     public Transform dodecaedro;
     public float dodecaedroScaleFactor = 250f;
-    public Vector3 skyOffset = new Vector3(0f, 200f, 0f); // estaba en 100
+    public Vector3 skyOffset = new Vector3(0f, 200f, 0f); // Offset del dodecaedro hacia el cielo / Estaba en 100
 
     [Header("Traversal Settings")]
     public float traversalSpeed = 5f;
@@ -39,42 +44,45 @@ public class HammiltonInmersivo : MonoBehaviour
     [SerializeField]
     private List<GameObject> objetos;
 
-    private GameObject currentBallInstance;
-    private GameObject asientoGO;
+    private GameObject currentBallInstance;      // Instancia de la bola del jugador
+    private GameObject asientoGO;                // Referencia al asiento/bola
 
     private Vector3 jugadorRigOriginalWorldScale;
-    private bool playerDentro = false;
-    private bool ejecutandoIngresar = false;
-    private bool followBall = false;
+    private bool playerDentro = false;           // Si el jugador est谩 dentro del dodecaedro
+    private bool ejecutandoIngresar = false;     // Bandera de corrutina en ejecuci贸n
+    private bool followBall = false;             // Si el jugador debe seguir la bola
 
-    private float originalFOV;
-    private float originalNearClip;
-    private float originalFarClip;
-    private bool fovReducido = false;
+    private float originalFOV;                   // FOV original de la c谩mara
+    private float originalNearClip;              // Near clip plane original
+    private float originalFarClip;               // Far clip plane original
+    private bool fovReducido = false;            // Flag si FOV fue reducido
 
-    private Vector3 anchorSpawn;
-    private Vector3 pinSpawn;
-    private Vector3 rawOffset;
+    private Vector3 anchorSpawn;                 // Posici贸n del anclaje
+    private Vector3 pinSpawn;                    // Posici贸n del primer pin
+    private Vector3 rawOffset;                   // Offset calculado
 
-    private Vector3 originalDodecaedroPosition;
-    private Quaternion originalDodecaedroRotation;
-    private Vector3 originalDodecaedroScale;
+    private Vector3 originalDodecaedroPosition;  // Posici贸n original del dodecaedro
+    private Quaternion originalDodecaedroRotation; // Rotaci贸n original
+    private Vector3 originalDodecaedroScale;     // Escala original
 
     [Header("Offset Settings")]
-    public float offsetDistance = 1.5f; // Puedes ajustar este valor desde el Inspector
+    public float offsetDistance = 1.5f;          // Distancia de offset desde los pins
 
 
 
     void FixedUpdate()
     {
+        // Mantiene el jugador siguiendo la posici贸n de la bola
         if (followBall && currentBallInstance != null && jugadorRig != null)
         {
             jugadorRig.transform.position = currentBallInstance.transform.position;
         }
     }
 
+    // Ingresa al modo inmersivo sin parentear el jugador
     public void IngresarNoParent()
     {
+        // Verifica que haya al menos un pin colocado
         if (dodecaedroScript.placedPins.First == null)
         {
             Debug.LogError("No pins placed. Cannot enter immersive mode.");
@@ -90,17 +98,21 @@ public class HammiltonInmersivo : MonoBehaviour
             return;
         }
 
+        // Calcula posiciones y offset desde el primer pin
         anchorSpawn = firstPin.anchor.position;
         pinSpawn = firstPin.pinObject.transform.position;
         rawOffset = (pinSpawn - anchorSpawn) * 2.5f;
 
+        // Guarda estado original del dodecaedro
         originalDodecaedroPosition = dodecaedro.position;
         originalDodecaedroRotation = dodecaedro.rotation;
         originalDodecaedroScale = dodecaedro.localScale;
 
+        // Escala y desplaza el dodecaedro hacia el cielo
         dodecaedro.position += skyOffset;
         dodecaedro.localScale *= dodecaedroScaleFactor;
 
+        // Desactiva sistemas normales y prepara inmersi贸n
         DesactivarCharacterController();
         DesactivarLocomocion();
         ReducirFOV();
@@ -109,13 +121,16 @@ public class HammiltonInmersivo : MonoBehaviour
         StartCoroutine(IngresarNoParentCoroutine());
     }
 
+    // Corrutina que instancia la bola y comienza el recorrido
     private IEnumerator IngresarNoParentCoroutine()
     {
+        // Evita ejecuciones simult谩neas
         if (ejecutandoIngresar || playerDentro)
             yield break;
 
         ejecutandoIngresar = true;
 
+        // Instancia la bola del jugador en el punto de entrada
         if (pelotaPlayerPrefab != null && spawnPoint != null)
         {
             currentBallInstance = Instantiate(
@@ -126,45 +141,54 @@ public class HammiltonInmersivo : MonoBehaviour
             );
             asientoGO = currentBallInstance;
 
+            // Desactiva f铆sica y colisiones de la bola para que sea controlada directamente
             var rb = currentBallInstance.GetComponent<Rigidbody>();
             var col = currentBallInstance.GetComponent<Collider>();
             if (rb) rb.isKinematic = true;
             if (col) col.enabled = false;
         }
 
+        // Espera breve antes de iniciar el seguimiento
         yield return new WaitForSeconds(0.3f);
 
         followBall = true;
         playerDentro = true;
         ejecutandoIngresar = false;
 
+        // Activa el filtro de audio muffled para inmersi贸n
         filtro?.ActivarFiltroMuffled();
 
+        // Inicia el recorrido del camino Hamiltoniano
         StartHamiltonianPathTraversal();
     }
 
+    // Sale del modo inmersivo y restaura los sistemas normales
     public void Salir()
     {
-        // 1) Restaurar c醡ara si estaba reducida
+        // 1) Restaura la c谩mara si fue reducida
         AumentarFOV();
 
-        // 2) Reset del dodecaedro
+        // 2) Restaura el dodecaedro a su estado original
         dodecaedro.position = originalDodecaedroPosition;
         dodecaedro.rotation = originalDodecaedroRotation;
         dodecaedro.localScale = originalDodecaedroScale;
 
+        // Detiene el seguimiento de la bola
         followBall = false;
 
         if (jugadorRig != null)
             jugadorRig.transform.SetParent(null);
 
+        // Reactiva los sistemas de locomotion
         ActivarCharacterController();
         ActivarLocomocion();
         filtro?.DesactivarFiltroMuffled();
 
+        // Destruye la bola con un peque帽o retraso
         if (currentBallInstance != null)
             Destroy(currentBallInstance, 1f);
 
+        // Reactiva los objetos del mundo
         ActivarObjetos();
 
         playerDentro = false;
@@ -172,83 +196,102 @@ public class HammiltonInmersivo : MonoBehaviour
         StartCoroutine(DelayedTeleport());
     }
 
-    // Red de seguridad: si el script se desactiva en mitad del ride, devolver c醡ara
+    // Red de seguridad: si el script se desactiva, restaura la c谩mara
     void OnDisable()
     {
         if (fovReducido) AumentarFOV();
     }
 
 
+    // Teletransporta al jugador al suelo principal, con delay para estabilizar transforms
     private IEnumerator DelayedTeleport()
     {
-        yield return new WaitForEndOfFrame(); // Let transforms settle
-        yield return new WaitForSeconds(0.1f); // Extra delay if needed
+        yield return new WaitForEndOfFrame(); // Permite que los transforms se estabilicen
+        yield return new WaitForSeconds(0.1f); // Delay adicional si es necesario
 
         if (sueloTP != null)
             sueloTP.RequestTeleport();
     }
 
 
+    // Inicia el recorrido del camino Hamiltoniano a trav茅s de los pines del dodecaedro
     public void StartHamiltonianPathTraversal()
     {
+        // Verifica que el jugador est茅 dentro y la bola exista
         if (!playerDentro || currentBallInstance == null)
         {
             Debug.LogWarning("Cannot start path traversal. Player not inside the ball.");
             return;
         }
 
+        // Detiene cualquier corrutina anterior
         StopAllCoroutines();
+        // Inicia la nueva corrutina de traversal
         StartCoroutine(TraversePathCoroutine());
     }
 
+    // Corrutina principal que recorre los pines del camino Hamiltoniano
+    // Calcula movimiento hacia cada pin, aplica rotaci贸n hacia el centro del dodecaedro (gravedad simulada)
     private IEnumerator TraversePathCoroutine()
     {
+        // Verifica que existan pines colocados para el recorrido
         if (dodecaedroScript == null || dodecaedroScript.placedPins == null || dodecaedroScript.placedPins.Count < 2)
         {
             Debug.LogWarning("Not enough pins to traverse.");
             yield break;
         }
 
+        // Obtiene el primer pin del camino
         var node = dodecaedroScript.placedPins.First;
 
+        // Itera a trav茅s de cada pin en el camino Hamiltoniano
         while (node != null)
         {
+            // Calcula posici贸n del pin y direcci贸n desde el dodecaedro
             Vector3 pinPos = node.Value.pinObject.transform.position;
             Vector3 direction = (pinPos - dodecaedro.position).normalized;
+            // Calcula posici贸n objetivo con offset respecto al pin
             Vector3 targetPos = pinPos + direction * offsetDistance;
 
+            // Aproximaci贸n al pin objetivo
             while (Vector3.Distance(currentBallInstance.transform.position, targetPos) > 3f)
             {
+                // Calcula direcci贸n hacia la posici贸n objetivo
                 Vector3 moveDir = (targetPos - currentBallInstance.transform.position).normalized;
+                // Mueve la bola hacia el objetivo
                 currentBallInstance.transform.position += moveDir * traversalSpeed * Time.deltaTime;
 
-                // --- Rotaci髇 con gravedad simulada ---
+                // --- Aplica rotaci贸n con gravedad simulada hacia el centro del dodecaedro ---
                 if (moveDir != Vector3.zero)
                 {
-                    // Forward: direcci髇 del movimiento
+                    // Rotaci贸n forward: orienta hacia la direcci贸n del movimiento
                     Quaternion targetForwardRot = Quaternion.LookRotation(moveDir, Vector3.up);
 
-                    // Gravedad: inclinaci髇 hacia el centro del dodecaedro
+                    // Gravedad simulada: inclinaci贸n hacia el centro del dodecaedro
                     Vector3 gravityDir = (dodecaedro.position - jugadorRig.transform.position).normalized;
                     Quaternion gravityRot = Quaternion.FromToRotation(jugadorRig.transform.up, gravityDir);
 
-                    // Combina ambas y aplica suavemente
+                    // Combina la rotaci贸n de movimiento con la de gravedad
                     Quaternion targetRot = gravityRot * targetForwardRot;
 
+                    // Aplica interpolaci贸n suave para la rotaci贸n
                     jugadorRig.transform.rotation = Quaternion.Slerp(jugadorRig.transform.rotation, targetRot, 2f * Time.deltaTime);
                 }
 
                 yield return null;
             }
 
+            // Snaps a la posici贸n objetivo cuando est谩 lo suficientemente cerca
             currentBallInstance.transform.position = targetPos;
+            // Avanza al siguiente pin
             node = node.Next;
             yield return null;
         }
 
-
+        // Detiene el seguimiento de la bola cuando termina el recorrido
         followBall = false;
 
+        // Restaura el dodecaedro a su posici贸n original
         dodecaedro.position = originalDodecaedroPosition;
         dodecaedro.rotation = originalDodecaedroRotation;
         dodecaedro.localScale = originalDodecaedroScale;
@@ -258,15 +301,18 @@ public class HammiltonInmersivo : MonoBehaviour
         Salir();
     }
 
-
+    // Reduce el FOV y ajusta los planos de recorte de la c谩mara para efecto de inmersi贸n
     void ReducirFOV()
     {
+        // Si la c谩mara XR no existe o ya est谩 reducida, no hace nada
         if (xrCamera == null || fovReducido) return;
 
+        // Guarda los valores originales de la c谩mara
         originalFOV = xrCamera.fieldOfView;
         originalNearClip = xrCamera.nearClipPlane;
         originalFarClip = xrCamera.farClipPlane;
 
+        // Aplica valores reducidos para efecto de zoom/inmersi贸n
         xrCamera.fieldOfView = 45f;
         xrCamera.nearClipPlane = 0.01f;
         xrCamera.farClipPlane = 50f;
@@ -274,10 +320,13 @@ public class HammiltonInmersivo : MonoBehaviour
         fovReducido = true;
     }
 
+    // Restaura el FOV y los planos de recorte originales de la c谩mara
     void AumentarFOV()
     {
+        // Si no est谩 reducido, no hace nada
         if (xrCamera == null || !fovReducido) return;
 
+        // Restaura los valores guardados
         xrCamera.fieldOfView = originalFOV;
         xrCamera.nearClipPlane = originalNearClip;
         xrCamera.farClipPlane = originalFarClip;
@@ -285,18 +334,21 @@ public class HammiltonInmersivo : MonoBehaviour
         fovReducido = false;
     }
 
+    // Desactiva el CharacterController del jugador
     void DesactivarCharacterController()
     {
         if (characterController != null && characterController.enabled)
             characterController.enabled = false;
     }
 
+    // Reactiva el CharacterController del jugador
     void ActivarCharacterController()
     {
         if (characterController != null && !characterController.enabled)
             characterController.enabled = true;
     }
 
+    // Desactiva los sistemas de locomotion (movimiento y teletransporte)
     void DesactivarLocomocion()
     {
         if (moveProvider != null)
@@ -305,20 +357,25 @@ public class HammiltonInmersivo : MonoBehaviour
             teleportationProvider.enabled = false;
     }
 
+    // Reactiva los sistemas de locomotion
     void ActivarLocomocion()
     {
+        // Reactiva el movimiento continuo
         if (moveProvider != null)
             moveProvider.enabled = true;
+        // Reactiva el teletransporte
         if (teleportationProvider != null)
             teleportationProvider.enabled = true;
     }
 
+    // Reactiva todos los objetos de la escena que fueron desactivados
     public void ActivarObjetos()
     {
         foreach (GameObject obj in objetos)
             if (obj != null) obj.SetActive(true);
     }
 
+    // Desactiva todos los objetos de la escena para crear efecto de aislamiento inmersivo
     public void DesactivarObjetos()
     {
         foreach (GameObject obj in objetos)
