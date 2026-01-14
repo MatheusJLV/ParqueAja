@@ -1,17 +1,15 @@
 using System.Collections;
 using UnityEngine;
 
-/// <summary>
-/// Plays a looping sound while the object is moving (by translation and/or rotation).
-/// - Samples motion at a low rate (no per-frame polling).
-/// - Fades in when motion crosses the threshold; fades out after inactivity.
-/// - Uses Rigidbody if available; otherwise falls back to transform deltas.
-/// </summary>
+// Reproduce un sonido en loop mientras el objeto se mueve (traslación y/o rotación).
+// - Mide el movimiento a baja frecuencia (sin consultar cada frame).
+// - Hace fade in al superar el umbral y fade out tras inactividad.
+// - Usa Rigidbody si existe; de lo contrario usa deltas de transform.
 [DisallowMultipleComponent]
 [RequireComponent(typeof(AudioSource))]
 public class MotionSoundController : MonoBehaviour
 {
-    public enum MotionMode { Linear, Angular, Either } // which motion triggers audio
+    public enum MotionMode { Linear, Angular, Either } // qué tipo de movimiento dispara el audio
 
     [Header("Audio")]
     [Tooltip("Looping clip that represents motion (e.g., whoosh/hum/whirr).")]
@@ -44,18 +42,19 @@ public class MotionSoundController : MonoBehaviour
     [Tooltip("Angular speed that maps to pitchMax (rad/s).")]
     public float pitchRefAngular = 2.5f;
 
-    // Internals
+    // Estado interno de audio/movimiento
     private AudioSource _src;
     private Rigidbody _rb;
     private Coroutine _sampler;
     private Coroutine _fade;
-    private bool _active;              // currently considered "moving"
-    private float _lastAboveTime;      // last time we were above threshold
+    private bool _active;              // se considera "en movimiento"
+    private float _lastAboveTime;      // última vez por encima del umbral
 
-    // Fallback deltas when Rigidbody is absent
+    // Deltas de posición/rotación cuando no hay Rigidbody
     private Vector3 _prevPos;
     private Quaternion _prevRot;
 
+    // Inicializa referencias y configura el audio en silencio listo para reproducir.
     private void Awake()
     {
         _src = GetComponent<AudioSource>();
@@ -70,23 +69,27 @@ public class MotionSoundController : MonoBehaviour
         _prevRot = transform.rotation;
     }
 
+    // Comienza la corutina de muestreo cuando se habilita el objeto.
     private void OnEnable()
     {
         if (_sampler != null) StopCoroutine(_sampler);
         _sampler = StartCoroutine(SampleMotionLoop());
     }
 
+    // Detiene la corutina y el sonido cuando se deshabilita el objeto.
     private void OnDisable()
     {
         if (_sampler != null) StopCoroutine(_sampler);
         HardStop();
     }
 
+    // Asegura que el audio se detenga al destruir el objeto.
     private void OnDestroy()
     {
         HardStop();
     }
 
+    // Bucle principal de muestreo de movimiento a intervalos fijos.
     private IEnumerator SampleMotionLoop()
     {
         float dt = Mathf.Max(0.02f, 1f / Mathf.Max(1f, sampleRateHz));
@@ -152,12 +155,14 @@ public class MotionSoundController : MonoBehaviour
         }
     }
 
+    // Lanza un fade controlado, cancelando cualquier fade previo.
     private void StartFade(float from, float to, float duration, bool startIfNeeded, bool stopAtEnd = false)
     {
         if (_fade != null) StopCoroutine(_fade);
         _fade = StartCoroutine(FadeCo(from, to, duration, startIfNeeded, stopAtEnd));
     }
 
+    // Corutina de interpolación de volumen; opcionalmente arranca o detiene el audio.
     private IEnumerator FadeCo(float from, float to, float duration, bool startIfNeeded, bool stopAtEnd)
     {
         if (loopClip != null && startIfNeeded)
@@ -184,6 +189,7 @@ public class MotionSoundController : MonoBehaviour
         }
     }
 
+    // Detiene cualquier fade en curso y apaga el audio inmediatamente.
     public void HardStop()
     {
         if (_fade != null) { StopCoroutine(_fade); _fade = null; }

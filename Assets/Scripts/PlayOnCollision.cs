@@ -1,11 +1,9 @@
 using UnityEngine;
 
-/// <summary>
-/// Plays an AudioSource when this object collides with something.
-/// - Works with standard collisions (not triggers)
-/// - Ignores long contacts; plays once per impact
-/// - Optionally limits minimum impact force to trigger sound
-/// </summary>
+// Reproduce un AudioSource cuando este objeto colisiona con algo
+// - Funciona con colisiones estándar (no triggers)
+// - Ignora contactos prolongados; reproduce una vez por impacto
+// - Opcionalmente limita la fuerza mínima de impacto para activar el sonido
 [RequireComponent(typeof(AudioSource))]
 [DisallowMultipleComponent]
 public class PlayOnCollision : MonoBehaviour
@@ -35,7 +33,7 @@ public class PlayOnCollision : MonoBehaviour
     [Tooltip("Scale volume by impact strength (min - baseVolume*0, max - baseVolume*1).")]
     public bool scaleVolumeByImpact = true;
 
-    private float _nextPlayableTime;
+    private float _nextPlayableTime; // Tiempo en que se puede reproducir el siguiente sonido
 
     private void Awake()
     {
@@ -44,6 +42,7 @@ public class PlayOnCollision : MonoBehaviour
         audioSource.loop = false;
     }
 
+    // Maneja el evento de colisión, reproduciendo sonido si cumple los requisitos de fuerza y cooldown
     private void OnCollisionEnter(Collision collision)
     {
         float impact = collision.relativeVelocity.magnitude;

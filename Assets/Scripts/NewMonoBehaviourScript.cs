@@ -1,14 +1,15 @@
 using UnityEngine;
 
+// Script MonoBehaviour vacío: plantilla básica para nuevos comportamientos.
 public class NewMonoBehaviourScript : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    // Se ejecuta una sola vez antes de la primera ejecución de Update después de crear el MonoBehaviour
     void Start()
     {
         
     }
 
-    // Update is called once per frame
+    // Se ejecuta una vez por frame
     void Update()
     {
         

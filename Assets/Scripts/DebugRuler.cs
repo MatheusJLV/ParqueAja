@@ -8,10 +8,10 @@ public class DebugRuler : MonoBehaviour
 {
     // Utilidad visual para inspeccionar transformaciones y propiedades físicas en tiempo de ejecución
     [SerializeField]
-    private TMP_Text debugText; // Reference to the TextMeshPro Text component
+    private TMP_Text debugText; // Referencia al componente TextMeshPro Text
 
     [SerializeField]
-    private List<GameObject> objects; // List of game objects
+    private List<GameObject> objects; // Lista de objetos a inspeccionar
 
     public VisualEffect staticFieldVFX;
 
@@ -23,7 +23,7 @@ public class DebugRuler : MonoBehaviour
     //[SerializeField]
     //private AsientoRotatorio asientoRotatorio; // Referencia al AsientoRotatorio
 
-    // Update is called once per frame
+    // Se ejecuta una vez por frame
     void Update()
     {
         // Evita errores si el texto de depuración no está asignado en escena
@@ -78,7 +78,7 @@ public class DebugRuler : MonoBehaviour
         return angle;
     }*/
 
-    // Method to get the positions of the game objects
+    // Método para obtener las posiciones de los game objects
     private string GetPositions()
     {
         string positions = "";

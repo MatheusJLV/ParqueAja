@@ -1,12 +1,14 @@
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
+// Controlador para activar/desactivar componentes XRGrabInteractable y Rigidbody
+// Permite alternar entre modos de interacción y física del objeto
 public class RigidBodContoller : MonoBehaviour
 {
-    private XRGrabInteractable xrGrabInteractable;
-    private Rigidbody rb;
+    private XRGrabInteractable xrGrabInteractable; // Componente de agarrado XR
+    private Rigidbody rb; // Rigidbody del objeto
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    // Obtiene referencias a los componentes necesarios y valida su existencia
     void Start()
     {
         // Debug log
@@ -33,13 +35,14 @@ public class RigidBodContoller : MonoBehaviour
         }
     }
 
-    // Update is called once per frame
+    // Update se llama una vez por frame
     void Update()
     {
 
     }
 
-    // Public method to deactivate the XRGrabInteractable and set Rigidbody to be influenced by other objects
+    // Desactiva el componente XRGrabInteractable y hace el Rigidbody kinemático
+    // Esto hace que el objeto no pueda ser agarrado pero pueda ser influenciado por otros objetos
     public void DeactivateComponents()
     {
         // Debug log
@@ -72,7 +75,8 @@ public class RigidBodContoller : MonoBehaviour
         }
     }
 
-    // Public method to reactivate the XRGrabInteractable and Rigidbody components
+    // Reactiva el componente XRGrabInteractable y hace el Rigidbody no kinemático
+    // Esto restaura la capacidad de agarrar el objeto y su comportamiento físico normal
     public void ReactivateComponents()
     {
         // Debug log

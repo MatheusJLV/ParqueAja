@@ -2,23 +2,26 @@ using System.Collections;
 using UnityEngine;
 using TMPro;
 
+// Registrador de rendimiento: monitorea FPS, tiempo de frame y uso de memoria en tiempo real.
 public class PerformanceLogger : MonoBehaviour
 {
     [Header("UI Reference")]
-    [SerializeField] private TMP_Text debugText;
+    [SerializeField] private TMP_Text debugText; // Texto donde se muestra el log de rendimiento
 
     [Header("Settings")]
-    [SerializeField] private float logInterval = 1f;
+    [SerializeField] private float logInterval = 1f; // Intervalo en segundos entre registros
 
-    private float deltaTime = 0.0f;
-    private float timeAccumulator = 0.0f;
-    private int frameCount = 0;
+    private float deltaTime = 0.0f;         // Promedio de tiempo entre frames
+    private float timeAccumulator = 0.0f;   // Acumulador de tiempo
+    private int frameCount = 0;             // Contador de frames en el intervalo
 
+    // Inicia la corutina de logging de rendimiento.
     private void Start()
     {
         StartCoroutine(LogPerformanceRoutine());
     }
 
+    // Cada frame: actualiza el acumulador de tiempo y el contador de frames.
     private void Update()
     {
         deltaTime += (Time.unscaledDeltaTime - deltaTime) * 0.1f;
@@ -26,6 +29,7 @@ public class PerformanceLogger : MonoBehaviour
         frameCount++;
     }
 
+    // Corutina que registra FPS, tiempo de frame y uso de memoria a intervalos regulares.
     private IEnumerator LogPerformanceRoutine()
     {
         while (true)
@@ -46,6 +50,7 @@ public class PerformanceLogger : MonoBehaviour
         }
     }
 
+    // Limpia el texto del log de rendimiento.
     public void ClearLog()
     {
         if (debugText != null)

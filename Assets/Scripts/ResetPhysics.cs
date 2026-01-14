@@ -1,14 +1,15 @@
 using UnityEngine;
 
+// Script para resetear la física de objetos (plantilla vacía)
 public class ResetPhysics : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    // Start se llama una vez antes de la primera ejecución de Update después de crear el MonoBehaviour
     void Start()
     {
         
     }
 
-    // Update is called once per frame
+    // Update se llama una vez por frame
     void Update()
     {
         

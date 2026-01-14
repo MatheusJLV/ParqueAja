@@ -12,7 +12,7 @@ public class MoveTo : MonoBehaviour
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
-        rb.isKinematic = true; // Aseg�rate de que sea kinem�tico
+        rb.isKinematic = true; // Asegurate de que sea kinemático
     }
 
     void FixedUpdate()
@@ -27,30 +27,34 @@ public class MoveTo : MonoBehaviour
         rb.MovePosition(newPosition);
     }*/
 
-    public Transform target;
-    public float force = 10f; // Ajusta este valor seg�n la masa y el drag del Rigidbody
-    public float stopDistance = 0.1f; // Distancia m�nima para dejar de aplicar fuerza
+    public Transform target;            // Objetivo hacia donde moverse
+    public float force = 10f;           // Magnitud de la fuerza aplicada; ajustar según masa/drag
+    public float stopDistance = 0.1f;   // Distancia mínima para detener el movimiento
 
     private Rigidbody rb;
 
+    // Obtiene el Rigidbody y lo configura como dinámico para poder aplicar fuerzas.
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
-        rb.isKinematic = false; // Debe ser din�mico para usar AddForce
+        rb.isKinematic = false; // Debe ser dinámico para usar AddForce
     }
 
+    // Cada frame físico: calcula dirección hacia el objetivo y aplica fuerza si no está cerca.
     void FixedUpdate()
     {
         if (target == null) return;
 
         Vector3 direction = (target.position - rb.position);
         float distance = direction.magnitude;
+        // Si llegó al destino, detén la velocidad
         if (distance < stopDistance)
         {
             rb.linearVelocity = Vector3.zero; // Detener el objeto
             return;
         }
 
+        // Aplica fuerza en la dirección normalizada del objetivo
         direction.Normalize();
         rb.AddForce(direction * force, ForceMode.Force);
     }

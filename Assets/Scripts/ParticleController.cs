@@ -1,41 +1,43 @@
 using UnityEngine;
 using UnityEngine.UI;
 
+// Controlador de partículas: gestiona reproducción, color, tamaño y efectos (ruido, colisiones).
 public class ParticleController : MonoBehaviour
 {
     public ParticleSystem particulas; // Asigna desde el Inspector o se obtiene en Start
-    public Slider colorSlider;
-    public Image colorSliderFill;
-    private Color currentColor; // Color inicial
-    public Button startBtn;
-    public Button pauseBtn;
-    public Button stopBtn;
-    public Button clearBtn;
-    public Slider sizeSlider;
-    public Slider speedSlider;
+    public Slider colorSlider;  // Control del color HSV
+    public Image colorSliderFill; // Indicador visual del color seleccionado
+    private Color currentColor; // Color actual de las partículas
+    public Button startBtn;     // Botón de inicio
+    public Button pauseBtn;     // Botón de pausa
+    public Button stopBtn;      // Botón de parada
+    public Button clearBtn;     // Botón de limpiar
+    public Slider sizeSlider;   // Control del tamaño
+    public Slider speedSlider;  // Control de velocidad
 
-    public float strength;
-    public float frequency;
-    public float scrollSpeed;
+    public float strength;      // Fuerza del ruido
+    public float frequency;     // Frecuencia del ruido
+    public float scrollSpeed;   // Velocidad de desplazamiento del ruido
 
-    public float dampen;
-    public float bounce;
-    public float lifeLoss;
+    public float dampen;        // Amortiguación en colisiones
+    public float bounce;        // Rebote en colisiones
+    public float lifeLoss;      // Pérdida de vida en colisiones
 
-    public Slider StrengthSlider;
-    public Slider frequencySlider;
-    public Slider scrollSpeedSlider;
+    public Slider StrengthSlider;       // Control de fuerza
+    public Slider frequencySlider;      // Control de frecuencia
+    public Slider scrollSpeedSlider;    // Control de velocidad de desplazamiento
 
-    public Slider dampenSlider;
-    public Slider bounceSlider;
-    public Slider lifeLossSlider;
+    public Slider dampenSlider;         // Control de amortiguación
+    public Slider bounceSlider;         // Control de rebote
+    public Slider lifeLossSlider;       // Control de pérdida de vida
 
-    public Button noiseBtn;
-    public Button collisionBtn;
+    public Button noiseBtn;     // Botón para habilitar ruido
+    public Button collisionBtn; // Botón para habilitar colisiones
 
+    // Configura referencias y conecta listeners de UI en la inicialización.
     void Start()
     {
-        // Si no se asign� desde el Inspector, intenta obtenerlo autom�ticamente
+        // Si no se asignó desde el Inspector, intenta obtenerlo automáticamente
         if (particulas == null)
             particulas = GetComponent<ParticleSystem>();
         if (colorSlider != null)
@@ -114,53 +116,56 @@ public class ParticleController : MonoBehaviour
         SetStartSpeed(value);
     }
 
-    // Inicia el sistema de part�culas
+    // Inicia el sistema de partículas
     public void StartParticles()
     {
         if (particulas != null)
             particulas.Play();
     }
 
-    // Detiene el sistema de part�culas
+    // Detiene el sistema de partículas
     public void StopParticles()
     {
         if (particulas != null)
             particulas.Stop();
     }
 
-    // Pausa el sistema de part�culas
+    // Pausa el sistema de partículas
     public void PauseParticles()
     {
         if (particulas != null)
             particulas.Pause();
     }
 
-    // Limpia todas las part�culas activas
+    // Limpia todas las partículas activas
     public void ClearParticles()
     {
         if (particulas != null)
             particulas.Clear();
     }
+    // Establece el tamaño inicial de las partículas
     public void SetStartSize(float size)
     {
         var main = particulas.main;
         main.startSize = size;
     }
 
+    // Establece la velocidad inicial de las partículas
     public void SetStartSpeed(float speed)
     {
         var main = particulas.main;
         main.startSpeed = speed;
     }
 
+    // Establece el color inicial de las partículas
     public void SetStartColor(Color color)
     {
         var main = particulas.main;
         main.startColor = color;
     }
 
-    // === NOISE MODULE ===
-
+    // === MÓDULO DE RUIDO ===
+    // Habilita el módulo de ruido con los parámetros configurados
     public void SetNoise()
     {
         var noise = particulas.noise;
@@ -170,8 +175,8 @@ public class ParticleController : MonoBehaviour
         noise.scrollSpeed = scrollSpeed;
     }
 
-    // === COLLISION MODULE ===
-
+    // === MÓDULO DE COLISIONES ===
+    // Habilita el módulo de colisiones con los parámetros configurados
     public void SetCollision()
     {
         var collision = particulas.collision;

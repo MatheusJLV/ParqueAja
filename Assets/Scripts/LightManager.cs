@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
+// Gestor de iluminación: orquesta luz direccional, ambiente, reflejos, post-exposure y skybox.
 public class LightManager : MonoBehaviour
 {
     [Header("Directional Light")]
@@ -15,21 +16,21 @@ public class LightManager : MonoBehaviour
 
 
     [Header("Skybox control")]
-    [SerializeField] private Material brightSkybox;     // assign your normal skybox
-    [SerializeField] private Material darkSkybox;       // assign a dark/night skybox
-    [SerializeField] private bool fadeSkybox = true;    // if false, swap immediately
+    [SerializeField] private Material brightSkybox;     // asigna tu skybox normal
+    [SerializeField] private Material darkSkybox;       // asigna un skybox oscuro/nocturno
+    [SerializeField] private bool fadeSkybox = true;    // si es false, cambia de inmediato
     [SerializeField] private float skyboxFadeDuration = 0.6f;
 
-    // internal state for fade
-    private Material _fadeSkyboxMat;   // optional, only if you use a blend-capable skybox material
+    // Estado interno para los fundidos
+    private Material _fadeSkyboxMat;   // opcional, solo si usas un skybox con soporte de blend
     private Coroutine _skyboxCo;
-    private Cubemap _brightReflection; // optional cached reflection cubemap
-    private Cubemap _darkReflection;   // optional cached reflection cubemap
+    private Cubemap _brightReflection; // cubemap de reflexión cacheado (opcional)
+    private Cubemap _darkReflection;   // cubemap de reflexión cacheado (opcional)
 
 
 
 
-    // Simple per-light intensity controls (kept)
+    // Controles simples de intensidad por luz direccional
     public void TurnOn()
     {
         SetIntensity(1f);
@@ -84,7 +85,7 @@ public class LightManager : MonoBehaviour
     public float reflectionsOff = 0f;
     public float postExposureOff = 0f;
 
-    // Baseline captured at Start and used for SetBright (Mode 1) and Mode 3 bright
+    // Baseline capturado en Start y usado para SetBright (Modo 1) y modo 3 brillante
     [Header("Baseline capture")]
     public bool captureBaselineOnStart = true;
     private float sunBaseline;
@@ -124,7 +125,7 @@ public class LightManager : MonoBehaviour
         exposureBaseline = (hasExposure && exposureOverride != null) ? exposureOverride.postExposure.value : 0f;
     }
 
-    // Mode 1: original style but Bright restores baseline
+    // Modo 1: estilo original; Bright restaura el baseline
     public void SetDark()
     {
         ApplyGlobalImmediate(sunOff, ambientOff, reflectionsOff, postExposureOff);
@@ -137,7 +138,7 @@ public class LightManager : MonoBehaviour
         ApplyBrightSkybox();
     }
 
-    // Helper used by all modes to apply global targets
+    // Ayudante usado por todos los modos para aplicar objetivos globales
     private void ApplyGlobalImmediate(float sun, float ambient, float reflections, float exposure)
     {
         if (directionalLight) directionalLight.intensity = sun;
@@ -155,7 +156,7 @@ public class LightManager : MonoBehaviour
         DynamicGI.UpdateEnvironment();
     }
 
-    // Mode 2: toggle a container GO on/off
+    // Modo 2: alterna un GameObject contenedor de luces
     [Header("Mode 2: Environment Lights GO")]
     public GameObject environmentLightsGO;
 
@@ -169,7 +170,7 @@ public class LightManager : MonoBehaviour
         if (environmentLightsGO) environmentLightsGO.SetActive(false);
     }
 
-    // Mode 3: mixed (toggle GO and partial scene changes)
+    // Modo 3: mixto (toggle GO y cambios parciales de escena)
     [Header("Mode 3: Partial dark targets")]
     public float partialSunDark = 0.1f;
     public float partialAmbientDark = 0.15f;
@@ -189,7 +190,7 @@ public class LightManager : MonoBehaviour
         ApplyGlobalImmediate(sunBaseline, ambientBaseline, reflectionsBaseline, exposureBaseline);
     }
 
-    // Diagnostics and blackout helpers (optional but kept)
+    // Diagnósticos y utilidades de blackout (opcional, se mantiene)
     private struct SavedLightState
     {
         public Light light;
@@ -275,7 +276,7 @@ public class LightManager : MonoBehaviour
         _skyboxCo = StartCoroutine(FadeSkybox(bright: true));
     }
 
-    // Call when making scene dark
+    // Llamar al oscurecer la escena
     private void ApplyDarkSkybox()
     {
         if (!fadeSkybox)
@@ -289,9 +290,9 @@ public class LightManager : MonoBehaviour
         _skyboxCo = StartCoroutine(FadeSkybox(bright: false));
     }
 
-    // Fades between skyboxes by dimming reflections to 0, swapping, then restoring.
-    // If your skybox shader supports a _Blend float, uncomment the blend lines and
-    // assign a material instance that lerps between two textures.
+    // Hace fade entre skyboxes bajando reflejos a 0, cambiando y luego restaurando.
+    // Si tu shader de skybox soporta _Blend, descomenta las líneas de mezcla y
+    // usa un material que interpole entre dos texturas.
     private IEnumerator FadeSkybox(bool bright)
     {
         // Step 1: fade reflections down to 0 so specular does not pop

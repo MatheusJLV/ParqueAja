@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.VFX;
 
+// Control de efectos visuales en secuencia temporal: reproduce y detiene VFX con retardos personalizados.
 public class ParabolaSonido : MonoBehaviour
 {
     [Header("Visual Effects (exactly four)")]
@@ -47,8 +48,8 @@ public class ParabolaSonido : MonoBehaviour
     Coroutine startRoutine;
     Coroutine stopRoutine;
 
-    // Make sure nothing plays by default.
-    // OnEnable runs before Start and is early enough to catch Play-On-Awake.
+    // Asegura que nada se reproduzca por defecto.
+    // OnEnable se ejecuta antes de Start y es lo suficientemente temprano para evitar Play-On-Awake.
     void OnEnable()
     {
         if (initializeStopped)
@@ -65,12 +66,14 @@ public class ParabolaSonido : MonoBehaviour
         UnwireButtons();
     }
 
+    // Si playOnStart está activo, inicia la secuencia de VFX.
     void Start()
     {
         if (playOnStart)
             StartAllSequential();
     }
 
+    // Inicia todos los VFX en secuencia con sus retardos personalizados.
     public void StartAllSequential()
     {
         // If a stop is in progress, cancel it first
@@ -79,6 +82,7 @@ public class ParabolaSonido : MonoBehaviour
         startRoutine = StartCoroutine(CoStartAll());
     }
 
+    // Detiene todos los VFX en secuencia con sus retardos personalizados.
     public void StopAllSequential()
     {
         // If a start is in progress, cancel it first
@@ -87,12 +91,14 @@ public class ParabolaSonido : MonoBehaviour
         stopRoutine = StartCoroutine(CoStopAll());
     }
 
+    // Cancela cualquier secuencia en curso (inicio o parada).
     public void CancelSequences()
     {
         if (startRoutine != null) { StopCoroutine(startRoutine); startRoutine = null; }
         if (stopRoutine != null) { StopCoroutine(stopRoutine); stopRoutine = null; }
     }
 
+    // Corutina que inicia los VFX con retardos.
     IEnumerator CoStartAll()
     {
         // Each offset is the delay BEFORE starting that specific effect.
@@ -103,6 +109,7 @@ public class ParabolaSonido : MonoBehaviour
         startRoutine = null;
     }
 
+    // Corutina que detiene los VFX con retardos.
     IEnumerator CoStopAll()
     {
         // Each offset is the delay BEFORE stopping that specific effect.
@@ -113,7 +120,7 @@ public class ParabolaSonido : MonoBehaviour
         stopRoutine = null;
     }
 
-    // VFX Graph helpers (guard against disabled/NULL)
+    // Ayudantes para VFX Graph (protegen contra deshabilitado/NULL).
     void SafePlay(VisualEffect vfx)
     {
         if (vfx != null && vfx.isActiveAndEnabled)
@@ -124,6 +131,7 @@ public class ParabolaSonido : MonoBehaviour
         }
     }
 
+    // Detiene un VFX de forma segura si está activo y habilitado.
     void SafeStop(VisualEffect vfx)
     {
         if (vfx != null && vfx.isActiveAndEnabled)
@@ -133,6 +141,7 @@ public class ParabolaSonido : MonoBehaviour
         }
     }
 
+    // Detiene inmediatamente todos los VFX.
     void ForceStopAllImmediate()
     {
         SafeStop(vfx1);
@@ -141,12 +150,14 @@ public class ParabolaSonido : MonoBehaviour
         SafeStop(vfx4);
     }
 
+    // Corutina que detiene todos los VFX en el próximo frame para atrapar comportamiento de Play-on-Enable.
     IEnumerator ForceStopNextFrame()
     {
         // Catch any late Play-on-Enable behavior.
         yield return null;
         ForceStopAllImmediate();
     }
+    // Conecta los botones Start y Stop a sus métodos correspondientes.
     void WireButtons()
     {
         if (startButton != null)
@@ -162,6 +173,7 @@ public class ParabolaSonido : MonoBehaviour
         }
     }
 
+    // Desconecta los listeners de los botones.
     void UnwireButtons()
     {
         if (startButton != null)

@@ -5,49 +5,51 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+// Gestor de música: reproduce clips de audio de diferentes categorías con controles de reproducción y volumen.
 public class MusicManagerScript : MonoBehaviour
 {
     [SerializeField]
-    private List<AudioClip> musicClips; // List of music clips
+    private List<AudioClip> musicClips; // Lista de música actual en reproducción
 
     [SerializeField]
-    private List<AudioClip> Accion; // List of Accion music clips
+    private List<AudioClip> Accion; // Música de categoría Acción
 
     [SerializeField]
-    private List<AudioClip> Favoritas; // List of Favoritas music clips
+    private List<AudioClip> Favoritas; // Música de categoría Favoritas
 
     [SerializeField]
-    private List<AudioClip> Relax; // List of Relax music clips
+    private List<AudioClip> Relax; // Música de categoría Relax
 
     [SerializeField]
-    private List<AudioClip> Sass; // List of Sass music clips
+    private List<AudioClip> Sass; // Música de categoría Sass
 
     [SerializeField]
-    private List<AudioClip> DefaultList; // List of Default music clips
+    private List<AudioClip> DefaultList; // Música de categoría Default
 
     [SerializeField]
-    private AudioSource audioSource; // Reference to the AudioSource component
+    private AudioSource audioSource; // Componente AudioSource para reproducir
 
-    private int currentTrackIndex = 0; // Index of the current track
-
-    [SerializeField]
-    private GameObject dropdownObject; // Reference to the dropdown GameObject
+    private int currentTrackIndex = 0; // Índice de la canción actual
 
     [SerializeField]
-    private GameObject sliderObject; // Reference to the slider GameObject
-
-    private TMP_Dropdown dropdown; // Reference to the TMP_Dropdown component
-    private Slider volumeSlider; // Reference to the Slider component
-
-    private bool playPauseCalled = false; // Flag to indicate if PlayPause was called
+    private GameObject dropdownObject; // GameObject del dropdown para seleccionar categoría
 
     [SerializeField]
-    private bool playMusicOnStart = true; // Si es true, reproduce m�sica al iniciar
+    private GameObject sliderObject; // GameObject del slider para controlar volumen
 
-    private bool hasStartedPlayback = false;
+    private TMP_Dropdown dropdown; // Referencia al componente TMP_Dropdown
+    private Slider volumeSlider; // Referencia al componente Slider
+
+    private bool playPauseCalled = false; // Indica si el usuario presionó pausa/play
+
+    [SerializeField]
+    private bool playMusicOnStart = true; // Si es true, reproduce música al iniciar
+
+    private bool hasStartedPlayback = false; // Marca si ya comenzó la reproducción
 
     void Start()
     {
+        // Inicializa referencias a componentes y carga música según configuración
         if (audioSource == null)
         {
             Debug.LogError("audioSource is null in Start method of MusicManagerScript");
@@ -87,7 +89,7 @@ public class MusicManagerScript : MonoBehaviour
         StartCoroutine(CheckAudioStatus());
     }
 
-    // Coroutine to check the audio status
+    // Corutina que verifica el estado del audio y avanza a la siguiente canción cuando termina
     private IEnumerator CheckAudioStatus()
     {
         while (true)
@@ -103,7 +105,7 @@ public class MusicManagerScript : MonoBehaviour
     }
 
 
-    // Play the current track (normal playlist mode: NO loop)
+    // Reproduce la canción actual sin loop (modo lista normal)
     public void PlayMusic()
     {
         if (musicClips.Count > 0)
@@ -117,6 +119,7 @@ public class MusicManagerScript : MonoBehaviour
         else Debug.LogError("musicClips is empty in PlayMusic");
     }
 
+    // Selecciona una canción al azar y la reproduce
     public void PlayRandomMusic()
     {
         if (musicClips.Count > 0)
@@ -128,7 +131,7 @@ public class MusicManagerScript : MonoBehaviour
         else Debug.LogError("musicClips is empty in PlayRandomMusic");
     }
 
-    // Pause the current track
+    // Pausa la canción actual
     public void PauseMusic()
     {
         if (audioSource.isPlaying)
@@ -142,7 +145,7 @@ public class MusicManagerScript : MonoBehaviour
         }
     }
 
-    // Stop the current track
+    // Detiene la reproducción actual
     public void StopMusic()
     {
         if (audioSource.isPlaying)
@@ -156,7 +159,7 @@ public class MusicManagerScript : MonoBehaviour
         }
     }
 
-    // Play the next track in the list
+    // Avanza a la siguiente canción en la lista
     public void NextSong()
     {
         if (musicClips.Count > 0)
@@ -170,7 +173,7 @@ public class MusicManagerScript : MonoBehaviour
         }
     }
 
-    // Play the previous track in the list
+    // Retrocede a la canción anterior en la lista
     public void PreviousSong()
     {
         if (musicClips.Count > 0)
@@ -184,8 +187,7 @@ public class MusicManagerScript : MonoBehaviour
         }
     }
 
-    // Play a specific song by name
-    // Play a specific song by name (FORCE LOOP)
+    // Reproduce una canción específica por nombre (activa loop para esa canción)
     public void PlaySongByName(string songName)
     {
         // 1) Try current list first
@@ -222,14 +224,14 @@ public class MusicManagerScript : MonoBehaviour
 
     public void DisableLoop() => audioSource.loop = false;
 
-    // Coroutine to resume the current track after a delay
+    // Corutina que reanuda la canción actual después de un retraso
     private IEnumerator ResumeCurrentTrackAfterDelay(float delay)
     {
         yield return new WaitForSeconds(delay);
         PlayMusic();
     }
 
-    // Set the volume of the audio source based on the slider value
+    // Establece el volumen del audio según el valor del slider
     public void SetVolume()
     {
         if (volumeSlider != null)
@@ -242,7 +244,7 @@ public class MusicManagerScript : MonoBehaviour
         }
     }
 
-    // Load music clips from the specified list
+    // Carga la lista de música según la opción seleccionada en el dropdown
     public void LoadMusicClips()
     {
         string folderName = "Default";
@@ -266,7 +268,7 @@ public class MusicManagerScript : MonoBehaviour
             Debug.LogWarning("No valid music files found in the specified list.");
     }
 
-    // Play or pause the music based on the current state
+    // Alterna entre play y pausa según el estado actual de reproducción
     public void PlayPause()
     {
         playPauseCalled = true; // Set the flag to indicate PlayPause was called
@@ -281,7 +283,7 @@ public class MusicManagerScript : MonoBehaviour
         }
     }
 
-    // Case-insensitive, trimmed match against one list
+    // Búsqueda case-insensitive del índice de una canción por nombre en una lista
     private int FindIndexByName(string songName, List<AudioClip> list)
     {
         if (list == null) return -1;
@@ -296,7 +298,7 @@ public class MusicManagerScript : MonoBehaviour
         return -1;
     }
 
-    // Search all lists in order; return the clip and the list it came from
+    // Busca en todas las listas de música y retorna el clip, la lista de origen e índice
     private bool TryFindInAllLists(string songName, out AudioClip clip, out List<AudioClip> sourceList, out int index)
     {
         var banks = new List<List<AudioClip>> { Accion, Favoritas, Relax, Sass, DefaultList, musicClips };

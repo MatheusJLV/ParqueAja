@@ -2,29 +2,32 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /*
- * El script causo mucho caos, no apto para dibujo magnetico pero tal vez si para puntillada
- * si se cambia el eje del movimiento magnetico perpendicularmente. conservar por ahora
+ * El script causó mucho caos, no apto para dibujo magnético pero tal vez sí para puntillada
+ * si se cambia el eje del movimiento magnético perpendicularmente. conservar por ahora
  */
 
+// Generador de partículas en cuadrícula: crea una malla de partículas atraídas hacia un imán y un plano.
 public class ParticleManager : MonoBehaviour
 {
-    public GameObject particlePrefab;
-    public Transform magnet; // Your magnetic marker
-    public Transform attractionPlane; // The drawing surface (particles stick here)
+    public GameObject particlePrefab;        // Prefab de partícula a instanciar
+    public Transform magnet;                 // Marcador magnético que atrae partículas
+    public Transform attractionPlane;        // Superficie de dibujo donde se adhieren las partículas
 
-    public int gridX = 40;
-    public int gridY = 40;
-    public float spacing = 0.025f;
-    public float attractionRadius = 0.15f;
-    public float moveSpeed = 5f;
+    public int gridX = 40;                   // Número de columnas de la cuadrícula
+    public int gridY = 40;                   // Número de filas de la cuadrícula
+    public float spacing = 0.025f;           // Distancia entre partículas
+    public float attractionRadius = 0.15f;   // Radio de acción magnética
+    public float moveSpeed = 5f;             // Velocidad de movimiento de partículas
 
     private List<Transform> particles = new List<Transform>();
 
+    // Genera la cuadrícula inicial de partículas en el Start.
     void Start()
     {
         GenerateParticles();
     }
 
+    // Cada frame: atrae partículas hacia el imán y las proyecta al plano.
     void Update()
     {
         foreach (var particle in particles)
@@ -42,6 +45,7 @@ public class ParticleManager : MonoBehaviour
         }
     }
 
+    // Instancia un arreglo de partículas en cuadrícula sobre el plano de atracción.
     void GenerateParticles()
     {
         Vector3 origin = attractionPlane.position;
@@ -60,6 +64,7 @@ public class ParticleManager : MonoBehaviour
         }
     }
 
+    // Proyecta una posición de partícula al plano de atracción.
     Vector3 ProjectToPlane(Vector3 particlePos)
     {
         // Project toward attractionPlane, constrained to its forward direction

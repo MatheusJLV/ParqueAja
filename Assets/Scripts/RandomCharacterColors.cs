@@ -1,10 +1,12 @@
 using UnityEngine;
 using TMPro;
 
+// Aplica colores aleatorios a cada carácter individual de un texto TextMeshPro
 public class RandomCharacterColors : MonoBehaviour
 {
-    public TMP_Text textMeshProComponent; // Assign your TextMeshProUGUI or TextMeshPro component in the Inspector
+    public TMP_Text textMeshProComponent; // Componente TextMeshProUGUI o TextMeshPro a colorear
 
+    // Inicializa el script aplicando colores aleatorios al texto al comenzar
     void Start()
     {
         if (textMeshProComponent == null)
@@ -16,6 +18,7 @@ public class RandomCharacterColors : MonoBehaviour
         ApplyRandomColorsToCharacters(textMeshProComponent.text);
     }
 
+    // Genera colores aleatorios para cada carácter del texto y aplica tags de rich text
     void ApplyRandomColorsToCharacters(string originalText)
     {
         string coloredText = "";
