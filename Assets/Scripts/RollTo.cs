@@ -4,29 +4,33 @@ using UnityEngine.XR.Interaction.Toolkit.Interactors;
 
 // este script ya no se va a usar, queda ahi para borrar luego si por si las dudas
 
+// Sistema de movimiento automático para objetos con Rigidbody que los desplaza desde un punto de salida hacia una meta
+// usando física (MovePosition). Al llegar, el objeto recupera la gravedad y deja de ser cinemático.
 public class RollTo : MonoBehaviour
 {
-    public GameObject salida;
-    public GameObject meta;
-    public float speed = 5f;
+    public GameObject salida;        // Punto de origen desde donde inicia el movimiento
+    public GameObject meta;          // Punto de destino al que debe llegar el objeto
+    public float speed = 5f;         // Velocidad de desplazamiento en unidades por segundo         // Velocidad de desplazamiento en unidades por segundo
 
-    private Rigidbody rb;
+    private Rigidbody rb;            // Referencia al componente Rigidbody del objeto
     //private bool wasKinematic;
     //private bool wasUseGravity;
 
-    public float stopDistance = 0.1f;
+    public float stopDistance = 0.1f;  // Distancia mínima para considerar que llegó a la meta
 
-    private float delayTimer;
+    private float delayTimer;          // Temporizador para retrasos (sin uso actual)          // Temporizador para retrasos (sin uso actual)
 
+    // Inicializa la referencia al Rigidbody al despertar el componente
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
         if (rb == null)
         {
-            Debug.LogWarning("[RollTo] No se encontr� Rigidbody en el objeto.");
+            Debug.LogWarning("[RollTo] No se encontr� Rigidbody en el objeto.");
         }
     }
 
+    // Mueve el objeto hacia la meta usando física. Al llegar, restaura la gravedad y deshabilita el script.
     void FixedUpdate()
     {
 

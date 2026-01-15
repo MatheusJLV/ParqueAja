@@ -1,41 +1,40 @@
 using System.Collections;
 using UnityEngine;
 
-/// <summary>
-/// Keeps all sources playing continuously and hands the "spotlight"
-/// to each one in sequence by crossfading volumes.
-/// - No Update(): uses a single coroutine with WaitForSecondsRealtime
-/// - Resilient to timeScale changes
-/// - Works with 2+ sources (defaults assume 4)
-/// </summary>
+// Sistema de crossfade secuencial para múltiples AudioSources que mantiene todas las fuentes reproduciendo continuamente
+// y pasa el "spotlight" (volumen principal) a cada una en secuencia mediante transiciones suaves.
+// - No usa Update(): utiliza una sola corrutina con WaitForSecondsRealtime
+// - Resiliente a cambios de timeScale
+// - Funciona con 2 o más fuentes de audio (por defecto asume 4)
 [DisallowMultipleComponent]
 public class SequentialSpotlightCrossfader : MonoBehaviour
 {
     [Header("Audio Sources (order = spotlight order)")]
-    public AudioSource[] sources;
+    public AudioSource[] sources;          // Array de fuentes de audio en el orden de rotación del spotlight
 
     [Header("Per-source hold times (seconds)")]
     [Tooltip("Must match number of sources (e.g., [3, 2, 1, 4])")]
-    public float[] holdTimes;
+    public float[] holdTimes;              // Tiempo que cada fuente mantiene el spotlight antes de pasar a la siguiente              // Tiempo que cada fuente mantiene el spotlight antes de pasar a la siguiente
 
     [Header("Volumes")]
-    [Range(0f, 1f)] public float baseVolume = 0.15f;
-    [Range(0f, 1f)] public float spotlightVolume = 0.9f;
+    [Range(0f, 1f)] public float baseVolume = 0.15f;        // Volumen base para las fuentes que no tienen el spotlight
+    [Range(0f, 1f)] public float spotlightVolume = 0.9f;    // Volumen para la fuente que tiene el spotlight activo    // Volumen para la fuente que tiene el spotlight activo
 
     [Header("Crossfade timing")]
-    public float fadeDuration = 0.7f;
+    public float fadeDuration = 0.7f;      // Duración de la transición de crossfade entre fuentes      // Duración de la transición de crossfade entre fuentes
 
     [Header("Global fade")]
     [Tooltip("Duration of the overall fade when the system turns on.")]
-    public float globalFadeIn = 1.5f;
+    public float globalFadeIn = 1.5f;      // Duración del fade-in global cuando el sistema se activa
     [Tooltip("Duration of the overall fade when the system turns off.")]
-    public float globalFadeOut = 1.5f;
+    public float globalFadeOut = 1.5f;     // Duración del fade-out global cuando el sistema se desactiva     // Duración del fade-out global cuando el sistema se desactiva
 
-    private Coroutine loopRoutine;
-    private Coroutine globalFadeRoutine;
-    private float globalFadeFactor = 0f; // 0 = silent, 1 = full
-    private bool isFadingOut = false;
+    private Coroutine loopRoutine;         // Referencia a la corrutina del ciclo de spotlight
+    private Coroutine globalFadeRoutine;   // Referencia a la corrutina del fade global
+    private float globalFadeFactor = 0f;   // Factor de fade global: 0 = silencio, 1 = volumen completo
+    private bool isFadingOut = false;      // Indica si el sistema está en proceso de fade-out      // Indica si el sistema está en proceso de fade-out
 
+    // Inicializa el sistema: configura las fuentes de audio, inicia el fade-in global y comienza el ciclo de spotlight
     private void OnEnable()
     {
         if (sources == null || sources.Length == 0)
@@ -68,6 +67,7 @@ public class SequentialSpotlightCrossfader : MonoBehaviour
         loopRoutine = StartCoroutine(SpotlightLoop());
     }
 
+    // Detiene el sistema: cancela las corrutinas activas e inicia el fade-out global
     private void OnDisable()
     {
         if (loopRoutine != null) StopCoroutine(loopRoutine);
@@ -76,6 +76,7 @@ public class SequentialSpotlightCrossfader : MonoBehaviour
         globalFadeRoutine = StartCoroutine(GlobalFade(globalFadeFactor, 0f, globalFadeOut));
     }
 
+    // Ciclo principal que rota el spotlight entre las fuentes de audio, haciendo crossfade y esperando el tiempo asignado a cada una
     private IEnumerator SpotlightLoop()
     {
         int idx = 0;
@@ -87,6 +88,7 @@ public class SequentialSpotlightCrossfader : MonoBehaviour
         }
     }
 
+    // Realiza un crossfade hacia la fuente especificada, ajustando los volúmenes de todas las fuentes suavemente
     private IEnumerator CrossfadeTo(int spotlightIdx)
     {
         int n = sources.Length;
@@ -118,6 +120,7 @@ public class SequentialSpotlightCrossfader : MonoBehaviour
         }
     }
 
+    // Controla el fade global del sistema, escalando todos los volúmenes gradualmente entre los valores especificados
     private IEnumerator GlobalFade(float from, float to, float duration)
     {
         double t0 = Time.realtimeSinceStartupAsDouble;
