@@ -2,41 +2,44 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.VFX;
 
+// Sistema mejorado de Van Der Graaf que controla efectos visuales (VFX) del generador y varita,
+// así como sistemas de partículas (Chidori). Gestiona parámetros en tiempo real mediante sliders de UI,
+// aplicando proporciones diferentes entre el generador principal y la varita secundaria.
 [DisallowMultipleComponent]
 public class VanDerGrafEnhanced : MonoBehaviour
 {
     //  VFX (cuerpo / varita) 
     [Header("VFX (Generador / Varita)")]
     [Tooltip("VisualEffect del cuerpo (EstaticVanDer.vfx)")]
-    public VisualEffect generadorVFX;
+    public VisualEffect generadorVFX;              // VFX principal del generador Van Der Graaf
 
     [Tooltip("VisualEffect de la varita (opcional)")]
-    public VisualEffect varitaVFX;
+    public VisualEffect varitaVFX;                 // VFX secundario de la varita (con proporciones distintas)
 
     [Header("Valores en runtime (cuerpo)")]
-    [Min(0)] public float spawnRate = 60f;
-    [Min(0)] public float lifetimeMin = 0.5f;
-    [Min(0)] public float lifetimeMax = 1.5f;
-    [Min(0)] public float noiseIntensity = 1f;
-    [Min(0)] public float attractorStrength = 20f; // varita no lo usa por ahora
+    [Min(0)] public float spawnRate = 60f;         // Tasa de generación de partículas por segundo
+    [Min(0)] public float lifetimeMin = 0.5f;      // Tiempo de vida mínimo de las partículas (segundos)
+    [Min(0)] public float lifetimeMax = 1.5f;      // Tiempo de vida máximo de las partículas (segundos)
+    [Min(0)] public float noiseIntensity = 1f;     // Intensidad del ruido aplicado al movimiento
+    [Min(0)] public float attractorStrength = 20f; // Fuerza del atractor (varita no lo usa por ahora)
 
     [Header("UI (Sliders Generador)")]
-    public Slider spawnRateSD;
-    public Slider lifetimeMinSD;
-    public Slider lifetimeMaxSD;
-    public Slider noiseIntensitySD;
-    public Slider attractorStrengthSD;
+    public Slider spawnRateSD;                     // Slider para controlar la tasa de spawn
+    public Slider lifetimeMinSD;                   // Slider para controlar el tiempo de vida mínimo
+    public Slider lifetimeMaxSD;                   // Slider para controlar el tiempo de vida máximo
+    public Slider noiseIntensitySD;                // Slider para controlar la intensidad del ruido
+    public Slider attractorStrengthSD;             // Slider para controlar la fuerza del atractor
 
     [Header("Aplicar (ambos)")]
-    public Button aplicarBTN;
+    public Button aplicarBTN;                      // Botón para aplicar todos los valores de los sliders a VFX y PS
 
     [Header("Opciones")]
-    public bool debugLogs = true;
+    public bool debugLogs = true;                  // Activar/desactivar logs de depuración en consola
 
     [Header("Proporciones para VARITA")]
-    public float wandSpawnFactor = 0.5f;        // = /2
-    public float wandLifetimeMinFactor = 1.6f;  // = *8/5
-    public float wandNoiseFactor = 0.5f;        // = /2
+    public float wandSpawnFactor = 0.5f;           // Factor multiplicador para spawn de varita (÷2)
+    public float wandLifetimeMinFactor = 1.6f;     // Factor multiplicador para lifetime mínimo de varita (×8/5)
+    public float wandNoiseFactor = 0.5f;           // Factor multiplicador para ruido de varita (÷2)
 
     // Blackboard IDs (mismos nombres en ambos VFX)
     static readonly int ID_SpawnRate = Shader.PropertyToID("SpawnRate");
@@ -48,33 +51,32 @@ public class VanDerGrafEnhanced : MonoBehaviour
     //  Chidori (ParticleSystem) 
     [Header("Chidori (ParticleSystem)")]
     [Tooltip("PS del Chidori fino (obligatorio para estos controles)")]
-    public ParticleSystem chidoriThinPS;
+    public ParticleSystem chidoriThinPS;           // Sistema de partículas del efecto Chidori fino
 
     [Tooltip("PS del Chidori grueso (opcional; se aplica el mismo control)")]
-    public ParticleSystem chidoriThickPS;
+    public ParticleSystem chidoriThickPS;          // Sistema de partículas del efecto Chidori grueso (opcional)
 
     [Header("UI (Sliders Chidori)")]
-    public Slider chiSimSpeedSD;       // Main  Simulation Speed
-    public Slider chiMaxParticlesSD;   // Main  Max Particles (entero)
-    public Slider chiNoiseStrengthSD;  // Noise  Strength
-    public Slider chiNoiseFreqSD;      // Noise  Frequency
-    public Slider chiRateOverTimeSD;   // Emission  Rate over Time
-    public Slider chiHueSD;            // Color (Hue 0..1)
-    //public Image chiHueFill;          // Imagen para tintar el fill (como en tu ejemplo)
+    public Slider chiSimSpeedSD;                   // Slider para velocidad de simulación (Main)
+    public Slider chiMaxParticlesSD;               // Slider para número máximo de partículas (Main, entero)
+    public Slider chiNoiseStrengthSD;              // Slider para fuerza del ruido (Noise)
+    public Slider chiNoiseFreqSD;                  // Slider para frecuencia del ruido (Noise)
+    public Slider chiRateOverTimeSD;               // Slider para tasa de emisión (Emission)
+    public Slider chiHueSD;                        // Slider para tono de color (Hue 0..1)
+    //public Image chiHueFill;                     // Imagen para tintar el fill del slider
 
     [Header("Valores en runtime (Chidori)")]
-    [Min(0)] public float chiSimSpeed = 5f;
-    [Min(1)] public int chiMaxParticles = 15;
-    [Min(0)] public float chiNoiseStrength = 5f;
-    [Min(0)] public float chiNoiseFrequency = 5f;
-    [Min(0)] public float chiRateOverTime = 80f;
-    [Range(0, 1)] public float chiHue = 0.6f; // azul por defecto
+    [Min(0)] public float chiSimSpeed = 5f;        // Velocidad de simulación del sistema de partículas
+    [Min(1)] public int chiMaxParticles = 15;      // Número máximo de partículas simultáneas
+    [Min(0)] public float chiNoiseStrength = 5f;   // Fuerza del módulo de ruido
+    [Min(0)] public float chiNoiseFrequency = 5f;  // Frecuencia del módulo de ruido
+    [Min(0)] public float chiRateOverTime = 80f;   // Tasa de emisión de partículas por segundo
+    [Range(0, 1)] public float chiHue = 0.6f;      // Tono del color (azul por defecto)
 
-    // 
-
+    // Inicializa el sistema suscribiendo listeners de los sliders y aplicando valores iniciales a VFX y PS
     void Start()
     {
-        // Suscribir UI (Generador)
+        // Suscribir listeners de UI (Generador)
         if (spawnRateSD) spawnRateSD.onValueChanged.AddListener(OnSpawnRateChanged);
         if (lifetimeMinSD) lifetimeMinSD.onValueChanged.AddListener(OnLifetimeMinChanged);
         if (lifetimeMaxSD) lifetimeMaxSD.onValueChanged.AddListener(OnLifetimeMaxChanged);
@@ -82,7 +84,7 @@ public class VanDerGrafEnhanced : MonoBehaviour
         if (attractorStrengthSD) attractorStrengthSD.onValueChanged.AddListener(OnAttractorStrengthChanged);
         if (aplicarBTN) aplicarBTN.onClick.AddListener(ApplyAllFromUI);
 
-        // Suscribir UI (Chidori)
+        // Suscribir listeners de UI (Chidori)
         if (chiSimSpeedSD) chiSimSpeedSD.onValueChanged.AddListener(OnChiSimSpeedChanged);
         if (chiMaxParticlesSD) chiMaxParticlesSD.onValueChanged.AddListener(OnChiMaxParticlesChanged);
         if (chiNoiseStrengthSD) chiNoiseStrengthSD.onValueChanged.AddListener(OnChiNoiseStrengthChanged);
@@ -96,8 +98,8 @@ public class VanDerGrafEnhanced : MonoBehaviour
         }*/
 
         PushValuesToUI();
-        ApplyAll();       // VFX
-        ApplyChidori();   // PS
+        ApplyAll();       // Aplicar valores iniciales a VFX
+        ApplyChidori();   // Aplicar valores iniciales a PS
     }
 
     void OnDestroy()
@@ -117,6 +119,7 @@ public class VanDerGrafEnhanced : MonoBehaviour
         //if (chiHueSD) chiHueSD.onValueChanged.RemoveListener(OnChiHueChanged);
     }
 
+    // Valida los valores en el Inspector y aplica los cambios automáticamente en modo edición
     void OnValidate()
     {
         if (lifetimeMax < lifetimeMin) lifetimeMax = lifetimeMin;
@@ -130,7 +133,9 @@ public class VanDerGrafEnhanced : MonoBehaviour
         }
     }
 
-    //  Handlers (Generador / Varita) 
+    //  Handlers de sliders (Generador / Varita) 
+    
+    // Maneja cambios en el slider de tasa de spawn, actualizando VFX del generador y varita con sus respectivas proporciones
     void OnSpawnRateChanged(float v)
     {
         spawnRate = Mathf.Max(0f, v);
@@ -139,6 +144,7 @@ public class VanDerGrafEnhanced : MonoBehaviour
         if (debugLogs) Debug.Log($"[VDG] SpawnRate cuerpo={spawnRate} varita={spawnRate * wandSpawnFactor}");
     }
 
+    // Maneja cambios en el slider de tiempo de vida mínimo, asegurando que no exceda el máximo
     void OnLifetimeMinChanged(float v)
     {
         lifetimeMin = Mathf.Max(0f, v);
@@ -153,6 +159,7 @@ public class VanDerGrafEnhanced : MonoBehaviour
         SetFloat(varitaVFX, ID_LifetimeMin, lifetimeMin * wandLifetimeMinFactor);
     }
 
+    // Maneja cambios en el slider de tiempo de vida máximo, asegurando que no sea menor que el mínimo
     void OnLifetimeMaxChanged(float v)
     {
         lifetimeMax = Mathf.Max(lifetimeMin, v);
@@ -160,6 +167,7 @@ public class VanDerGrafEnhanced : MonoBehaviour
         SetFloat(varitaVFX, ID_LifetimeMax, lifetimeMax);
     }
 
+    // Maneja cambios en el slider de intensidad de ruido, aplicando proporciones diferentes a generador y varita
     void OnNoiseIntensityChanged(float v)
     {
         noiseIntensity = Mathf.Max(0f, v);
@@ -167,12 +175,14 @@ public class VanDerGrafEnhanced : MonoBehaviour
         SetFloat(varitaVFX, ID_NoiseIntensity, noiseIntensity * wandNoiseFactor);
     }
 
+    // Maneja cambios en el slider de fuerza del atractor (solo aplica al generador)
     void OnAttractorStrengthChanged(float v)
     {
         attractorStrength = Mathf.Max(0f, v);
         SetFloat(generadorVFX, ID_AttractorStrength, attractorStrength);
     }
 
+    // Lee todos los valores de los sliders, los valida y aplica a los VFX y sistemas de partículas
     public void ApplyAllFromUI()
     {
         if (spawnRateSD) spawnRate = Mathf.Max(0f, spawnRateSD.value);
@@ -195,6 +205,7 @@ public class VanDerGrafEnhanced : MonoBehaviour
         if (debugLogs) Debug.Log("[VDG] ApplyAllFromUI  aplicado a VFX y Chidori PS.");
     }
 
+    // Aplica todos los valores actuales a los VisualEffect del generador y varita
     void ApplyAll()
     {
         SetFloat(generadorVFX, ID_SpawnRate, spawnRate);
@@ -212,6 +223,7 @@ public class VanDerGrafEnhanced : MonoBehaviour
         }
     }
 
+    // Establece un valor float en el VisualEffect si existe la propiedad, con manejo de errores opcional
     void SetFloat(VisualEffect vfx, int id, float v)
     {
         if (!vfx) return;
@@ -219,6 +231,7 @@ public class VanDerGrafEnhanced : MonoBehaviour
         else if (debugLogs) Debug.LogWarning($"[VDG] ({vfx.name}) falta propiedad float id={id}.");
     }
 
+    // Actualiza los sliders con los valores actuales sin disparar eventos de cambio
     void PushValuesToUI()
     {
         if (spawnRateSD) spawnRateSD.SetValueWithoutNotify(spawnRate);
@@ -237,15 +250,27 @@ public class VanDerGrafEnhanced : MonoBehaviour
         if (chiNoiseFreqSD) chiNoiseFreqSD.SetValueWithoutNotify(chiNoiseFrequency);
         if (chiRateOverTimeSD) chiRateOverTimeSD.SetValueWithoutNotify(chiRateOverTime);
         if (chiHueSD) chiHueSD.SetValueWithoutNotify(chiHue);
-        //if (chiHueFill) chiHueFill.color = Color.HSVToRGB(chiHue, 1f, 1f); // como en tu patr�n de slider de color :contentReference[oaicite:1]{index=1}
+        //if (chiHueFill) chiHueFill.color = Color.HSVToRGB(chiHue, 1f, 1f); // como en el patrón de slider de color
     }
 
-    //  Handlers (Chidori PS) 
+    //  Handlers de sliders (Chidori PS) 
+    
+    // Maneja cambios en el slider de velocidad de simulación de Chidori
     void OnChiSimSpeedChanged(float v) { chiSimSpeed = Mathf.Max(0f, v); ApplyChidori(); }
+    
+    // Maneja cambios en el slider de número máximo de partículas de Chidori
     void OnChiMaxParticlesChanged(float v) { chiMaxParticles = Mathf.Max(1, Mathf.RoundToInt(v)); ApplyChidori(); }
+    
+    // Maneja cambios en el slider de fuerza de ruido de Chidori
     void OnChiNoiseStrengthChanged(float v) { chiNoiseStrength = Mathf.Max(0f, v); ApplyChidori(); }
+    
+    // Maneja cambios en el slider de frecuencia de ruido de Chidori
     void OnChiNoiseFreqChanged(float v) { chiNoiseFrequency = Mathf.Max(0f, v); ApplyChidori(); }
+    
+    // Maneja cambios en el slider de tasa de emisión de Chidori
     void OnChiRateChanged(float v) { chiRateOverTime = Mathf.Max(0f, v); ApplyChidori(); }
+    
+    // Maneja cambios en el slider de tono de color de Chidori (comentado)
     /*void OnChiHueChanged(float v)
     {
         chiHue = Mathf.Clamp01(v);
@@ -253,13 +278,16 @@ public class VanDerGrafEnhanced : MonoBehaviour
         ApplyChidori();
     }*/
 
-    //  Aplicaci�n a los ParticleSystems 
+    //  Aplicación a los ParticleSystems 
+    
+    // Aplica los valores actuales de Chidori a ambos sistemas de partículas (fino y grueso)
     void ApplyChidori()
     {
         ApplyChidoriTo(chidoriThinPS);
         ApplyChidoriTo(chidoriThickPS);
     }
 
+    // Aplica todos los parámetros de Chidori a un sistema de partículas específico (velocidad, color, emisión, ruido)
     void ApplyChidoriTo(ParticleSystem ps)
     {
         if (!ps) return;
@@ -268,18 +296,18 @@ public class VanDerGrafEnhanced : MonoBehaviour
         main.simulationSpeed = chiSimSpeed;
         main.maxParticles = chiMaxParticles;
 
-        // Color (Hue - RGB) aplicado a StartColor y, si existe, al material de trails
+        // Color (Hue -> RGB) aplicado a StartColor y, si existe, al material de trails
         Color c = Color.HSVToRGB(chiHue, 1f, 1f);
         main.startColor = new ParticleSystem.MinMaxGradient(c);
 
         var rend = ps.GetComponent<ParticleSystemRenderer>();
         if (rend)
         {
-            // Material principal
+            // Aplicar color al material principal
             if (rend.material && rend.material.HasProperty("_BaseColor")) rend.material.SetColor("_BaseColor", c);
             else if (rend.material) rend.material.color = c;
 
-            // Trail material (si existe)
+            // Aplicar color al material de trail (si existe)
             if (rend.trailMaterial)
             {
                 if (rend.trailMaterial.HasProperty("_BaseColor")) rend.trailMaterial.SetColor("_BaseColor", c);
@@ -287,11 +315,11 @@ public class VanDerGrafEnhanced : MonoBehaviour
             }
         }
 
-        // Emission
+        // Configurar módulo de emisión
         var emission = ps.emission;
         emission.rateOverTime = new ParticleSystem.MinMaxCurve(chiRateOverTime);
 
-        // Noise
+        // Configurar módulo de ruido
         var noise = ps.noise;
         noise.enabled = true;
         noise.strength = new ParticleSystem.MinMaxCurve(chiNoiseStrength);

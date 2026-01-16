@@ -3,26 +3,30 @@ using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 
-// este script ya no se va a usar, queda ahi para borrar luego si por si las dudas
+// Este script controla el movimiento de objetos en el juego, permitiendo que se muevan desde la base o la punta.
+// Este script ya no se va a usar, queda ahÃ­ para borrar luego si por si las dudas
 
 public class SubeYBajaScript : MonoBehaviour
 {
-    public GameObject baseGO;
-    public GameObject base2GO;
-    public GameObject puntaGO;
+    public GameObject baseGO; // Referencia al objeto base
+    public GameObject base2GO; // Referencia al segundo objeto base
+    public GameObject puntaGO; // Referencia al objeto punta
 
-    private Coroutine moverCoroutine;
+    private Coroutine moverCoroutine; // Coroutine para manejar el movimiento
+    // Inicia el movimiento desde la base
     public void MoverDesdeBase()
     {
         if (moverCoroutine != null) StopCoroutine(moverCoroutine);
         moverCoroutine = StartCoroutine(TranslacionBase2());
     }
 
+    // Inicia el movimiento desde la punta
     public void MoverDesdePunta()
     {
         if (moverCoroutine != null) StopCoroutine(moverCoroutine);
         moverCoroutine = StartCoroutine(TranslacionPunta2());
     }
+    // Coroutine para la translaciÃ³n desde la punta
     public IEnumerator TranslacionPunta2()
     {
         if (puntaGO == null)
@@ -86,6 +90,7 @@ public class SubeYBajaScript : MonoBehaviour
         yield break;
     }
 
+    // Coroutine para la translaciÃ³n desde la base
     public IEnumerator TranslacionBase2()
     {
         if (baseGO == null)
@@ -248,7 +253,7 @@ public class SubeYBajaScript : MonoBehaviour
                     rb.angularDamping = 0f;
                 }
 
-                // Espera breve para asegurar alineación del socket (ajusta si es necesario)
+                // Espera breve para asegurar alineaciï¿½n del socket (ajusta si es necesario)
                 //yield return new WaitForSeconds(0.2f);
 
                 //rollTo.meta = puntaGO;
@@ -336,7 +341,7 @@ public class SubeYBajaScript : MonoBehaviour
                 }
 
 
-                // Espera breve para asegurar alineación del socket (ajusta si es necesario)
+                // Espera breve para asegurar alineaciï¿½n del socket (ajusta si es necesario)
                 //yield return new WaitForSeconds(0.2f);
 
                 //rollTo.meta = baseGO; // El destino es la base
