@@ -347,7 +347,8 @@ public class sismoScript : MonoBehaviour
         Debug.Log($"Rango actualizado a: {range}");
         if (value>2)
         {
-            multiplier= 1f;
+            //se detuvo el modo extremo. para reactivarlo, el multiplicador se pone en 1
+            //multiplier= 1f;
         }
         else
         {
