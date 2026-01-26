@@ -52,17 +52,30 @@ public class DesktopRayClickGrab : MonoBehaviour
 
     void TrySelect()
     {
-        if (currentSelected != null) return;
-
-        if (rayInteractor.TryGetCurrent3DRaycastHit(out RaycastHit hit))
+        if (interactionManager == null)
         {
-            var interactable = hit.transform.GetComponentInParent<IXRSelectInteractable>();
-            interactionManager.SelectEnter(rayInteractor as IXRSelectInteractor, interactable);
-
-
-            interactionManager.SelectExit(rayInteractor as IXRSelectInteractor, currentSelected);
-            currentSelected = interactable;
+            Debug.LogError("interactionManager es NULL. Asigna el XR Interaction Manager en el inspector.");
+            return;
         }
+
+        var selectInteractor = rayInteractor as UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor;
+        if (selectInteractor == null)
+        {
+            Debug.LogError("rayInteractor NO implementa IXRSelectInteractor. Revisa que sea XRRayInteractor y que el componente esté activo.");
+            return;
+        }
+
+        if (!rayInteractor.TryGetCurrent3DRaycastHit(out RaycastHit hit))
+            return;
+
+        var interactable = hit.transform.GetComponentInParent<UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable>();
+        if (interactable == null)
+        {
+            Debug.LogWarning("Le pegó el ray, pero ese objeto NO es IXRSelectInteractable (no tiene XRGrabInteractable o similar en el padre).");
+            return;
+        }
+
+        interactionManager.SelectEnter(selectInteractor, interactable);
     }
 
     void TryUnselect()
