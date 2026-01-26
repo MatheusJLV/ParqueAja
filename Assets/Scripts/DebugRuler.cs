@@ -39,17 +39,18 @@ public class DebugRuler : MonoBehaviour
 
     public string DescribeTransform()
     {
-        // Siempre toma el primer objeto de la lista como referencia de medición
-        Transform t = objects[0].transform;
+        if (objects == null || objects.Count == 0)
+            return "No objects assigned.\n";
 
-        // Devuelve un bloque de texto legible para monitorear posición, rotación y escala en consola/UI
-        return $"Object: {this.name}\n" +
-               $"Position: {t.position}\n" +
-               $"Rotation (Euler): {t.rotation.eulerAngles}\n" +
-               $"Rotation: {t.rotation}\n" +
-               $"Rotation (LocalEuler): {t.localRotation.eulerAngles}\n" +
-               $"Rotation: {t.localRotation}\n" +
-               $"Scale: {t.localScale}";
+        string result = "";
+        for (int i = 0; i < objects.Count; i++)
+        {
+            if (objects[i] != null)
+                result += $"Object {i + 1} ({objects[i].name}) Position: {objects[i].transform.position}\n";
+            else
+                result += $"Object {i + 1}: null\n";
+        }
+        return result;
     }
 
     private string GetVFXProperties()
