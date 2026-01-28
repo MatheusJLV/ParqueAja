@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using UnityEngine.XR.Interaction.Toolkit;
 using System.Collections;
 using UnityEngine.XR.Interaction.Toolkit.Locomotion.Teleportation;
+using UnityEngine.VFX;
 
 /*
  Controla la interacción del jugador con una cocina solar.
@@ -24,7 +25,7 @@ public class CocinaSolarScript : MonoBehaviour
     public GameObject puntoInstanciaPelota;
     // Controles de interfaz
     public Button ingresarBtn;
-    public Button salirBtn;
+    //public Button salirBtn;
     public Slider duracionSD;
     // Parámetros de tiempo y dispersión
     public int duracion = 5;
@@ -38,23 +39,71 @@ public class CocinaSolarScript : MonoBehaviour
     // Control del temporizador
     private Coroutine temporizadorCoroutine;
 
+    // NUEVO: botón para toggle de partículas
+    public Button iniciarAnimacionBtn;
+
+    // NUEVO: referencia al componente Visual Effect (arrástralo desde la escena)
+    public VisualEffect vfx;
+
+    // NUEVO: estado local (no dependemos de aliveParticleCount porque es async)
+    private bool vfxEncendido = false;
+
+
     void Start()
     {
+        // Ensure VFX starts OFF
+        if (vfx != null)
+        {
+            vfx.Stop();
+            // Optional: hard reset so no residual particles remain
+            // vfx.Reinit();
+        }
+        vfxEncendido = false;
+
         // Asigna acciones a los botones
         if (ingresarBtn != null) ingresarBtn.onClick.AddListener(() => StartCoroutine(Ingresar()));
-        if (salirBtn != null) salirBtn.onClick.AddListener(Salir);
+        //if (salirBtn != null) salirBtn.onClick.AddListener(Salir);
+
+        if (iniciarAnimacionBtn != null)
+            iniciarAnimacionBtn.onClick.AddListener(StartAnimation);
+
+
         // Configura el slider de duración
-        if (duracionSD != null)
+        /*if (duracionSD != null)
         {
             duracionSD.onValueChanged.AddListener(ChangeDuracion);
             duracionSD.value = duracion;
+        }*/
+    }
+
+    public void StartAnimation()
+    {
+        if (vfx == null)
+        {
+            Debug.LogWarning("[CocinaSolarScript] Falta asignar 'vfx' (VisualEffect) en el inspector.");
+            return;
+        }
+
+        if (!vfxEncendido)
+        {
+            vfx.Play();          // inicia (OnPlay por defecto)
+            vfxEncendido = true;
+        }
+        else
+        {
+            vfx.Stop();          // detiene spawns (equivale a enviar "OnStop")
+            vfxEncendido = false;
+
+            // Opcional: si quieres cortar de inmediato y limpiar, descomenta:
+            // vfx.Reinit();     // reinicia tiempo y re-envía el evento inicial cuando corresponda
         }
     }
+
     // Actualiza la duración desde el slider
-    public void ChangeDuracion(float value)
+    /*public void ChangeDuracion(float value)
     {
         duracion = Mathf.RoundToInt(value);
-    }
+    }*/
 
     // Proceso de ingreso del jugador a la canica
     private IEnumerator Ingresar()
