@@ -36,6 +36,10 @@ public class VanDerGrafEnhanced : MonoBehaviour
     [Header("Opciones")]
     public bool debugLogs = true;                  // Activar/desactivar logs de depuración en consola
 
+    [Header("Reset Transform")]
+    [Tooltip("Objeto cuya posición y rotación se guardan al inicio y se restauran al resetear.")]
+    public GameObject objetoParaReset;
+
     [Header("Proporciones para VARITA")]
     public float wandSpawnFactor = 0.5f;           // Factor multiplicador para spawn de varita (÷2)
     public float wandLifetimeMinFactor = 1.6f;     // Factor multiplicador para lifetime mínimo de varita (×8/5)
@@ -72,10 +76,133 @@ public class VanDerGrafEnhanced : MonoBehaviour
     [Min(0)] public float chiNoiseFrequency = 5f;  // Frecuencia del módulo de ruido
     [Min(0)] public float chiRateOverTime = 80f;   // Tasa de emisión de partículas por segundo
     [Range(0, 1)] public float chiHue = 0.6f;      // Tono del color (azul por defecto)
+                                                   // ----------------------------
+                                                   // Default snapshot / reset
+                                                   // ----------------------------
+    [System.Serializable]
+    private struct DefaultState
+    {
+        // Generador
+        public float spawnRate;
+        public float lifetimeMin;
+        public float lifetimeMax;
+        public float noiseIntensity;
+        public float attractorStrength;
+
+        // Varita ratios
+        public float wandSpawnFactor;
+        public float wandLifetimeMinFactor;
+        public float wandNoiseFactor;
+
+        // Chidori
+        public float chiSimSpeed;
+        public int chiMaxParticles;
+        public float chiNoiseStrength;
+        public float chiNoiseFrequency;
+        public float chiRateOverTime;
+        public float chiHue;
+
+        // Transform snapshot
+        public bool hasTransform;
+        public Vector3 savedPosition;
+        public Quaternion savedRotation;
+
+
+
+        // Options
+        public bool debugLogs;
+    }
+
+    private DefaultState _defaults;
+    private bool _defaultsCaptured = false;
+
+    /// <summary>
+    /// Captures the current public/runtime values as "defaults".
+    /// Start() calls this automatically.
+    /// </summary>
+    public void SaveDefaults()
+    {
+        _defaults = new DefaultState
+        {
+            spawnRate = spawnRate,
+            lifetimeMin = lifetimeMin,
+            lifetimeMax = lifetimeMax,
+            noiseIntensity = noiseIntensity,
+            attractorStrength = attractorStrength,
+
+            wandSpawnFactor = wandSpawnFactor,
+            wandLifetimeMinFactor = wandLifetimeMinFactor,
+            wandNoiseFactor = wandNoiseFactor,
+
+            chiSimSpeed = chiSimSpeed,
+            chiMaxParticles = chiMaxParticles,
+            chiNoiseStrength = chiNoiseStrength,
+            chiNoiseFrequency = chiNoiseFrequency,
+            chiRateOverTime = chiRateOverTime,
+            chiHue = chiHue,
+
+            hasTransform = objetoParaReset != null,
+            savedPosition = objetoParaReset != null ? objetoParaReset.transform.position : Vector3.zero,
+            savedRotation = objetoParaReset != null ? objetoParaReset.transform.rotation : Quaternion.identity,
+
+            debugLogs = debugLogs
+        };
+
+        _defaultsCaptured = true;
+    }
+
+    /// <summary>
+    /// Resets all runtime values back to the last captured defaults, pushes them to UI, and reapplies to VFX/PS.
+    /// </summary>
+    public void ResetToSavedDefaults()
+    {
+        if (!_defaultsCaptured)
+            SaveDefaults();
+
+        // Generador
+        spawnRate = _defaults.spawnRate;
+        lifetimeMin = _defaults.lifetimeMin;
+        lifetimeMax = _defaults.lifetimeMax;
+        noiseIntensity = _defaults.noiseIntensity;
+        attractorStrength = _defaults.attractorStrength;
+
+        // Varita ratios
+        wandSpawnFactor = _defaults.wandSpawnFactor;
+        wandLifetimeMinFactor = _defaults.wandLifetimeMinFactor;
+        wandNoiseFactor = _defaults.wandNoiseFactor;
+
+        // Chidori
+        chiSimSpeed = _defaults.chiSimSpeed;
+        chiMaxParticles = _defaults.chiMaxParticles;
+        chiNoiseStrength = _defaults.chiNoiseStrength;
+        chiNoiseFrequency = _defaults.chiNoiseFrequency;
+        chiRateOverTime = _defaults.chiRateOverTime;
+        chiHue = _defaults.chiHue;
+
+        // Options
+        debugLogs = _defaults.debugLogs;
+
+        // Transform
+        if (_defaults.hasTransform && objetoParaReset != null)
+        {
+            objetoParaReset.transform.position = _defaults.savedPosition;
+            objetoParaReset.transform.rotation = _defaults.savedRotation;
+        }
+
+        // Ensure constraints
+        if (lifetimeMax < lifetimeMin) lifetimeMax = lifetimeMin;
+        if (chiMaxParticles < 1) chiMaxParticles = 1;
+
+        PushValuesToUI();
+        ApplyAll();
+        ApplyChidori();
+    }
 
     // Inicializa el sistema suscribiendo listeners de los sliders y aplicando valores iniciales a VFX y PS
     void Start()
     {
+        // Capture inspector/runtime defaults once at startup
+        SaveDefaults();
         // Suscribir listeners de UI (Generador)
         if (spawnRateSD) spawnRateSD.onValueChanged.AddListener(OnSpawnRateChanged);
         if (lifetimeMinSD) lifetimeMinSD.onValueChanged.AddListener(OnLifetimeMinChanged);
@@ -134,7 +261,7 @@ public class VanDerGrafEnhanced : MonoBehaviour
     }
 
     //  Handlers de sliders (Generador / Varita) 
-    
+
     // Maneja cambios en el slider de tasa de spawn, actualizando VFX del generador y varita con sus respectivas proporciones
     void OnSpawnRateChanged(float v)
     {
@@ -254,22 +381,22 @@ public class VanDerGrafEnhanced : MonoBehaviour
     }
 
     //  Handlers de sliders (Chidori PS) 
-    
+
     // Maneja cambios en el slider de velocidad de simulación de Chidori
     void OnChiSimSpeedChanged(float v) { chiSimSpeed = Mathf.Max(0f, v); ApplyChidori(); }
-    
+
     // Maneja cambios en el slider de número máximo de partículas de Chidori
     void OnChiMaxParticlesChanged(float v) { chiMaxParticles = Mathf.Max(1, Mathf.RoundToInt(v)); ApplyChidori(); }
-    
+
     // Maneja cambios en el slider de fuerza de ruido de Chidori
     void OnChiNoiseStrengthChanged(float v) { chiNoiseStrength = Mathf.Max(0f, v); ApplyChidori(); }
-    
+
     // Maneja cambios en el slider de frecuencia de ruido de Chidori
     void OnChiNoiseFreqChanged(float v) { chiNoiseFrequency = Mathf.Max(0f, v); ApplyChidori(); }
-    
+
     // Maneja cambios en el slider de tasa de emisión de Chidori
     void OnChiRateChanged(float v) { chiRateOverTime = Mathf.Max(0f, v); ApplyChidori(); }
-    
+
     // Maneja cambios en el slider de tono de color de Chidori (comentado)
     /*void OnChiHueChanged(float v)
     {
@@ -279,7 +406,7 @@ public class VanDerGrafEnhanced : MonoBehaviour
     }*/
 
     //  Aplicación a los ParticleSystems 
-    
+
     // Aplica los valores actuales de Chidori a ambos sistemas de partículas (fino y grueso)
     void ApplyChidori()
     {

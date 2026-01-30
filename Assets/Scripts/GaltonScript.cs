@@ -43,6 +43,11 @@ public class GaltonScript : MonoBehaviour
     // Referencia cacheada al Rigidbody del prefab para actualizar valores por defecto
     Rigidbody rbPrefab;
 
+    [Header("Input Safety")]
+    public float cooldownBoton = 1.0f;   // seconds
+    private float proximoClickPermitido = 0f;
+
+
     void Start()
     {
         // Suscribe el botón al evento de presión
@@ -84,10 +89,13 @@ public class GaltonScript : MonoBehaviour
     // Manejador del botón de generación
     void OnBotonPresionado()
     {
-        // Obtiene la cantidad del slider y lanza la instanciación
+        if (Time.time < proximoClickPermitido) return;
+        proximoClickPermitido = Time.time + cooldownBoton;
+
         int valorCantidad = Mathf.RoundToInt(cantidadSlider ? cantidadSlider.value : 1f);
         Instanciar(valorCantidad);
     }
+
 
     // Inicia el proceso de generación de bolas o agrega a la cola
     public void Instanciar(int valor)

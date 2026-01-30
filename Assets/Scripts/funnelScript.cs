@@ -357,22 +357,26 @@ public class funnelScript : MonoBehaviour
         }
     }*/
 
-    private static void StopAllAudioOnHierarchy(GameObject root)
+    private void StopAllAudioOnHierarchy(GameObject root)
     {
         if (root == null) return;
 
-        // Stop AudioSources on the root AND all children (even inactive ones)
         var sources = root.GetComponentsInChildren<AudioSource>(includeInactive: true);
         for (int i = 0; i < sources.Length; i++)
         {
             var src = sources[i];
             if (src == null) continue;
 
-            // This stops both the looping clip and any PlayOneShot voices on that source
+            // IMPORTANT: don't stop audio that belongs to the XR Rig (music / ambience usually lives there)
+            if (jugadorRig != null && src.transform.IsChildOf(jugadorRig.transform))
+                continue;
+
             src.Stop();
-            src.volume = 0f; // belt-and-suspenders (optional)
+            // DO NOT set volume to 0 here (it won't come back unless you restore it)
+            // src.volume = 0f;
         }
     }
+
 
     public void Finalizar(GameObject objeto)
     {
